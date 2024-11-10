@@ -1,1 +1,5 @@
 /target
+scop
+.obj
+*.o
+.vscode

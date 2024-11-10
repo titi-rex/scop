@@ -1,3 +1,26 @@
+# Internal Structure
+
+
+vertex
+free form geo
+
+
+element geo 
+    - face
+    - point 
+    - curve
+    - 2d curve
+    = etv
+
+
+OBJ {
+
+    group {
+
+    }
+
+}
+
 # Doc
 
 
