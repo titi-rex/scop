@@ -1,25 +1,14 @@
+# Vulkan
+(create windows)
+- create vk instance
+- list physical device
+(opt) create debugger
+
+
 # Internal Structure
 
 
-vertex
-free form geo
 
-
-element geo 
-    - face
-    - point 
-    - curve
-    - 2d curve
-    = etv
-
-
-OBJ {
-
-    group {
-
-    }
-
-}
 
 # Doc
 

@@ -11,7 +11,7 @@ NAME            =       scop
 
 #       ==============================  CMP     ==============================  #
 CC              =       g++
-CFLAGS          =       -Wall -Wextra -std=c++17 -O2 -g3 #-Werror
+CFLAGS          =       -Wall -Wextra -std=c++17 -O2 #-g3 #-Werror
 DFLAG           =       -MMD -MP
 LDFLAGS         = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
 
