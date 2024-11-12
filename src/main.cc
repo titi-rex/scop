@@ -77,6 +77,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 
     (void)messageType;
     (void)pUserData;
+    (void)messageSeverity;
 
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
         std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
@@ -150,6 +151,7 @@ class TApp
         VkFormat                    swapChainImageFormat;
         VkExtent2D                  swapChainExtent;
         std::vector<VkImage>        swapChainImages;
+        std::vector<VkImageView>    swapChainImageViews;
 
 // utils
         QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
@@ -282,7 +284,14 @@ class TApp
 // init
         void initWindow()
         {
-            glfwInit();
+            // if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND))
+            //     glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
+            // else 
+            //     std::cout << "No Wayland Support" << std::endl;
+            if(!glfwInit())
+                throw std::runtime_error("GLFW init failed!");
+            if (!glfwVulkanSupported())
+                throw std::runtime_error("GLFW reports to have no Vulkan support!");
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
             window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
@@ -411,7 +420,8 @@ class TApp
 
         }
 
-        void createSwapChain() {
+        void createSwapChain()
+        {
             SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 
             VkSurfaceFormatKHR      surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -437,6 +447,7 @@ class TApp
 
             if (indices.graphicsFamily != indices.presentFamily)
             {
+                std::cout << "concurrent mode for queue" << std::endl;
                 createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
                 createInfo.queueFamilyIndexCount = 2;
                 createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -454,8 +465,12 @@ class TApp
             createInfo.clipped = VK_TRUE;
             createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-            if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS)
-                throw std::runtime_error("failed to create swap chain!");
+            VkResult result = vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain);
+            if (result != VK_SUCCESS)
+            {
+                std::string res_str(string_VkResult(result));
+                throw std::runtime_error("failed to create swap chain! error: " + res_str);
+            }
 
             vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
             swapChainImages.resize(imageCount);
@@ -463,6 +478,32 @@ class TApp
 
             swapChainImageFormat = surfaceFormat.format;
             swapChainExtent = extent;
+
+        }
+
+        void createImageViews()
+        {
+            swapChainImageViews.resize(swapChainImages.size());
+
+            for (size_t i = 0; i < swapChainImages.size(); i++) 
+            {
+                VkImageViewCreateInfo createInfo{};
+                createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+                createInfo.image = swapChainImages[i];
+                createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+                createInfo.format = swapChainImageFormat;
+                createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+                createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+                createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+                createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+                createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                createInfo.subresourceRange.baseMipLevel = 0;
+                createInfo.subresourceRange.levelCount = 1;
+                createInfo.subresourceRange.baseArrayLayer = 0;
+                createInfo.subresourceRange.layerCount = 1;
+                if (vkCreateImageView(device, &createInfo, nullptr, &swapChainImageViews[i]) != VK_SUCCESS)
+                    throw std::runtime_error("échec de la création d'une image view!");
+            }
 
         }
 
@@ -474,7 +515,7 @@ class TApp
             pickPhysicalDevice();
             createLogicalDevice();
             createSwapChain();
-
+            createImageViews();
         }
 
 
@@ -487,6 +528,9 @@ class TApp
 
         void cleanup() 
         {
+            for (auto imageView : swapChainImageViews) {
+                vkDestroyImageView(device, imageView, nullptr);
+            }
             vkDestroySwapchainKHR(device, swapChain, nullptr);
             vkDestroyDevice(device, nullptr);
 

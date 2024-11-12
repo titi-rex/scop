@@ -22,6 +22,6 @@
 #include <cstdint> // Necessary for uint32_t
 #include <limits> // Necessary for std::numeric_limits
 #include <algorithm> // Necessary for std::clamp
-
+#include <vulkan/vk_enum_string_helper.h>
 
 #endif
