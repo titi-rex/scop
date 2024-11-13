@@ -18,6 +18,7 @@
 # include <set>
 # include <cstring>
 # include <optional>
+# include <fstream>
 
 #include <cstdint> // Necessary for uint32_t
 #include <limits> // Necessary for std::numeric_limits

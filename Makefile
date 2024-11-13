@@ -36,8 +36,9 @@ OBJ             =       ${OBJ_TMP:.cc=.o}
 
 DEPS            =       ${OBJ:.o=.d}
 
-
-
+#       ==============================  SHADERS     ==============================  #
+SHADERS_DIR		=	shaders/
+SHADERS			=	shaders/vert.spv shaders/frag.spv
 
 #       /*\/*\/*\/*\/*\/*\/*\/*\/*\/*\/*\/*\    RULES   /*\/*\/*\/*\/*\/*\/*\/*\/*\/*\/*\/*\    #
 .PHONY: all clean fclean re
@@ -52,12 +53,13 @@ clean:
 
 fclean: clean
 		@rm -f ${NAME} 
+		@rm -f ${SHADERS}
 
 re: fclean all
 
 
 #       ==============================  COMPILATION     ==============================  #
-${NAME}: ${OBJ_SUBDIR} ${OBJ}
+${NAME}: ${OBJ_SUBDIR} ${OBJ} 
 		${CC} ${IFLAGS} ${CFLAGS} ${OBJ} ${LDFLAGS} -o $@
 
 
@@ -66,6 +68,9 @@ ${OBJ_DIR}%.o: %.cc
 		${CC} ${IFLAGS} ${CFLAGS} ${DFLAG} -c $< -o $@
 
 
+shade: ${SHADERS_DIR}
+		glslc shaders/shader.vert -o shaders/vert.spv
+		glslc shaders/shader.frag -o shaders/frag.spv
 
 -include ${DEPS}
 
@@ -74,5 +79,7 @@ ${OBJ_DIR}%.o: %.cc
 ${OBJ_SUBDIR}:
 		@mkdir -p ${OBJ_SUBDIR}
 
+${SHADERS_DIR}:
+		@mkdir -p ${SHADERS_DIR}
 
 # end% 
