@@ -1,4 +1,6 @@
 # include "scop.h"
+#include <__stddef_size_t.h>
+#include <new>
 
 
 const uint32_t WIDTH = 800;
@@ -168,6 +170,7 @@ class TApp
         VkExtent2D                  swapChainExtent;
         std::vector<VkImage>        swapChainImages;
         std::vector<VkImageView>    swapChainImageViews;
+        VkRenderPass                renderPass;
         VkPipelineLayout            pipelineLayout;
 
 // utils
@@ -539,6 +542,81 @@ class TApp
             return shaderModule;
         }
 
+        //  to tell vulkan about the framebuffer attachment : color and depth buffer
+        void createRenderPass()
+        {
+            // we use 1 color buffer which format match a image 
+            VkAttachmentDescription colorAttachment{};
+            colorAttachment.format = swapChainImageFormat;
+            colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+            // determine what to do with data attachment before and after rendering
+            /*
+            for loadOp:
+                VK_ATTACHMENT_LOAD_OP_LOAD: Preserve the existing contents of the attachment
+                VK_ATTACHMENT_LOAD_OP_CLEAR: Clear the values to a constant at the start
+                VK_ATTACHMENT_LOAD_OP_DONT_CARE: Existing contents are undefined; we don't care about them
+            */
+            colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+            /*
+            for storeOp:
+                VK_ATTACHMENT_STORE_OP_STORE: Rendered contents will be stored in memory and can be read later
+                VK_ATTACHMENT_STORE_OP_DONT_CARE: Contents of the framebuffer will be undefined after the rendering operation
+            */
+            colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+            // idem for stencil buffer
+            // but we dont have one so dont care
+            colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+            // layout of pixel in memory
+            /*
+            can be (other exist):
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL: Images used as color attachment
+                VK_IMAGE_LAYOUT_PRESENT_SRC_KHR: Images to be presented in the swap chain
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL: Images to be used as destination for a memory copy operation
+            */
+            colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+            colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+            // one render pass can combine multiple subpass (subsequent rendering operation dependent of previous framebuffer content)
+            // example : post-process effect. Grouping into one render pass alllow optimization from vulkan
+            // we only use one here
+
+            // we pass to the subpass an attachment reference
+            VkAttachmentReference colorAttachmentRef{};
+            // index of attachemtn in array 
+            colorAttachmentRef.attachment = 0;
+            colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            // subpass : graphic, with 1 attachment ref
+            VkSubpassDescription subpass{};
+            subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+            subpass.colorAttachmentCount = 1;
+            subpass.pColorAttachments = &colorAttachmentRef;
+            // our attachment here is referenced from the fragment shader wit hthe directive :layout(location = 0) out vec4 outColor 
+            //  subpass can hold several type of attachment
+            /*
+                pInputAttachments: Attachments that are read from a shader
+                pResolveAttachments: Attachments used for multisampling color attachments
+                pDepthStencilAttachment: Attachment for depth and stencil data
+                pPreserveAttachments: Attachments that are not used by this subpass, but for which the data must be preserved
+            */
+
+
+            // renderpass CI
+            // we pass aray of attachment and array of subpass
+            VkRenderPassCreateInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+            renderPassInfo.attachmentCount = 1;
+            renderPassInfo.pAttachments = &colorAttachment;
+            renderPassInfo.subpassCount = 1;
+            renderPassInfo.pSubpasses = &subpass;
+
+            if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+                throw std::runtime_error("failed to create render pass!");
+
+        }
+
         void createGraphicsPipeline() 
         {
             // load shader binary code
@@ -745,6 +823,7 @@ class TApp
             createLogicalDevice();
             createSwapChain();
             createImageViews();
+            createRenderPass();
             createGraphicsPipeline();
         }
 
@@ -759,6 +838,7 @@ class TApp
         void cleanup() 
         {
             vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+            vkDestroyRenderPass(device, renderPass, nullptr);
             for (auto imageView : swapChainImageViews) {
                 vkDestroyImageView(device, imageView, nullptr);
             }
