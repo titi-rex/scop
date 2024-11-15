@@ -25,4 +25,6 @@
 #include <algorithm> // Necessary for std::clamp
 #include <vulkan/vk_enum_string_helper.h>
 
+typedef size_t size_t;
+
 #endif

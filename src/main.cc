@@ -1,6 +1,4 @@
 # include "scop.h"
-#include <__stddef_size_t.h>
-#include <new>
 
 
 const uint32_t WIDTH = 800;
@@ -172,6 +170,7 @@ class TApp
         std::vector<VkImageView>    swapChainImageViews;
         VkRenderPass                renderPass;
         VkPipelineLayout            pipelineLayout;
+        VkPipeline                  graphicsPipeline;
 
 // utils
         QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
@@ -617,6 +616,13 @@ class TApp
 
         }
 
+        // render process
+        /*
+            Shader stages: the shader modules that define the functionality of the programmable stages of the graphics pipeline
+            Fixed-function state: all of the structures that define the fixed-function stages of the pipeline, like input assembly, rasterizer, viewport and color blending
+            Pipeline layout: the uniform and push values referenced by the shader that can be updated at draw time
+            Render pass: the attachments referenced by the pipeline stages and their usage
+        */
         void createGraphicsPipeline() 
         {
             // load shader binary code
@@ -676,19 +682,19 @@ class TApp
 
             // (D) viewport
             // region of framebuffer that the output will be rendered to
-            VkViewport viewport{};
-            viewport.x = 0.0f;
-            viewport.y = 0.0f;
-            viewport.width = (float) swapChainExtent.width;
-            viewport.height = (float) swapChainExtent.height;
-            viewport.minDepth = 0.0f;
-            viewport.maxDepth = 1.0f;
+            // VkViewport viewport{};
+            // viewport.x = 0.0f;
+            // viewport.y = 0.0f;
+            // viewport.width = (float) swapChainExtent.width;
+            // viewport.height = (float) swapChainExtent.height;
+            // viewport.minDepth = 0.0f;
+            // viewport.maxDepth = 1.0f;
 
             // (D) scissor 
             // region of framebuffer where pixel are allowed to be stored (outisde its discarded)
-            VkRect2D scissor{};
-            scissor.offset = {0, 0};
-            scissor.extent = swapChainExtent;
+            // VkRect2D scissor{};
+            // scissor.offset = {0, 0};
+            // scissor.extent = swapChainExtent;
 
             // if viewport/scissor dynamic, just need to set their count in CI
             VkPipelineViewportStateCreateInfo viewportState{};
@@ -805,7 +811,34 @@ class TApp
 
 
             //  yeepee! creating the pipeline ! at last!
+            VkGraphicsPipelineCreateInfo pipelineInfo{};
+            pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+            // referencing shaders stages
+            pipelineInfo.stageCount = 2;
+            pipelineInfo.pStages = shaderStages;
+            // other stage and fxed function
+            pipelineInfo.pVertexInputState = &vertexInputInfo;
+            pipelineInfo.pInputAssemblyState = &inputAssembly;
+            pipelineInfo.pViewportState = &viewportState;
+            pipelineInfo.pRasterizationState = &rasterizer;
+            pipelineInfo.pMultisampleState = &multisampling;
+            pipelineInfo.pDepthStencilState = nullptr; // Optional
+            pipelineInfo.pColorBlendState = &colorBlending;
+            pipelineInfo.pDynamicState = &dynamicState;
+            // then layout
+            pipelineInfo.layout = pipelineLayout;
+            // then render pass wit hindex of subpass
+            pipelineInfo.renderPass = renderPass;
+            pipelineInfo.subpass = 0;
 
+            // opttionnal, allow to create pipeline derivate from another parent pipelein
+            // only used if VK_PIPELINE_CREATE_DERIVATIVE_BIT flag is set
+            pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
+            pipelineInfo.basePipelineIndex = -1; // Optional
+
+            // create pipeline, can create multpiple pipeline at once and used cached data to create pipelien faster
+            if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
+                throw std::runtime_error("failed to create graphics pipeline!");
 
             //  destroy shader module, as they are now loaded in the pipeline
             vkDestroyShaderModule(device, fragShaderModule, nullptr);
@@ -837,6 +870,7 @@ class TApp
 
         void cleanup() 
         {
+            vkDestroyPipeline(device, graphicsPipeline, nullptr);
             vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
             vkDestroyRenderPass(device, renderPass, nullptr);
             for (auto imageView : swapChainImageViews) {
