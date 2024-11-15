@@ -168,6 +168,7 @@ class TApp
         VkExtent2D                  swapChainExtent;
         std::vector<VkImage>        swapChainImages;
         std::vector<VkImageView>    swapChainImageViews;
+        VkPipelineLayout            pipelineLayout;
 
 // utils
         QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
@@ -540,26 +541,195 @@ class TApp
 
         void createGraphicsPipeline() 
         {
+            // load shader binary code
             auto vertShaderCode = readFile("shaders/vert.spv");
             auto fragShaderCode = readFile("shaders/frag.spv");
 
+            // shader module from shader bin code
             VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
             VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
 
+            // shader CI for vertex shader
             VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
             vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
             vertShaderStageInfo.module = vertShaderModule;
             vertShaderStageInfo.pName = "main";
 
+            // shader CI for fragemnt shader
             VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
             fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
             fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
             fragShaderStageInfo.module = fragShaderModule;
             fragShaderStageInfo.pName = "main";
 
+
+            // link shader CI as array
             VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
+            // for dynamique change (only viewport and few things)
+            // we MUST specify valu at runtime if we go dynamic
+            // list of what we want as dynamique
+            std::vector<VkDynamicState> dynamicStates = {
+                VK_DYNAMIC_STATE_VIEWPORT,
+                VK_DYNAMIC_STATE_SCISSOR
+            };
+
+            // dynamicstate CI
+            VkPipelineDynamicStateCreateInfo dynamicState{};
+            dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+            dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+            dynamicState.pDynamicStates = dynamicStates.data();
+
+            // vertex input CI (describe format vertex give nto vertex shader)
+            // filled for no data to load
+            VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
+            vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+            vertexInputInfo.vertexBindingDescriptionCount = 0;
+            vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
+            vertexInputInfo.vertexAttributeDescriptionCount = 0;
+            vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
+
+            // input assembly CI (describe how to use input vertice: draw pont, line, triangle... reuse vertices,..)
+            VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
+            inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+            inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+            inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+            // (D) viewport
+            // region of framebuffer that the output will be rendered to
+            VkViewport viewport{};
+            viewport.x = 0.0f;
+            viewport.y = 0.0f;
+            viewport.width = (float) swapChainExtent.width;
+            viewport.height = (float) swapChainExtent.height;
+            viewport.minDepth = 0.0f;
+            viewport.maxDepth = 1.0f;
+
+            // (D) scissor 
+            // region of framebuffer where pixel are allowed to be stored (outisde its discarded)
+            VkRect2D scissor{};
+            scissor.offset = {0, 0};
+            scissor.extent = swapChainExtent;
+
+            // if viewport/scissor dynamic, just need to set their count in CI
+            VkPipelineViewportStateCreateInfo viewportState{};
+            viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+            viewportState.viewportCount = 1;
+            viewportState.scissorCount = 1;
+
+
+            // else we load them 
+            // VkPipelineViewportStateCreateInfo viewportState{};
+            // viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+            // viewportState.viewportCount = 1;
+            // viewportState.pViewports = &viewport;
+            // viewportState.scissorCount = 1;
+            // viewportState.pScissors = &scissor;
+
+            // (G) we can set multpitple viewport/scissor in one pipeline, need to be enabled at (logical) device level
+
+
+            // rasterizer (take geometry and fill with fragment)
+            // perform depth testing, face culling, scissor test
+            VkPipelineRasterizationStateCreateInfo rasterizer{};
+            rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+
+            // (G) fragment that are beyon near and far plane are clamped instedd of discarded (usefull for shadowmap) 
+            // not enabled here
+            rasterizer.depthClampEnable = VK_FALSE;
+
+            // enable/disable rasterization (disable any output to framebuffer)
+            rasterizer.rasterizerDiscardEnable = VK_FALSE;
+
+            // (G) determin how fragment are generated, (G) for other than FILL
+            /*
+                VK_POLYGON_MODE_FILL: fill the area of the polygon with fragments
+                VK_POLYGON_MODE_LINE: polygon edges are drawn as lines
+                VK_POLYGON_MODE_POINT: polygon vertices are drawn as point
+            */
+            rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+
+            // thickness of line in count of fragment, maximum depend of hardware, > 1.0f need (G) wideLine
+            rasterizer.lineWidth = 1.0f;
+
+            // type of face culling and vertex order 
+            rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+            rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+
+            // alter depth values
+            // not enabled here
+            rasterizer.depthBiasEnable = VK_FALSE;
+            rasterizer.depthBiasConstantFactor = 0.0f; // Optional
+            rasterizer.depthBiasClamp = 0.0f; // Optional
+            rasterizer.depthBiasSlopeFactor = 0.0f; // Optional
+
+
+            // (G) enable multisample anti-aliasing, a way to perform anti aliasing 
+            // not enabled here
+            VkPipelineMultisampleStateCreateInfo multisampling{};
+            multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+            multisampling.sampleShadingEnable = VK_FALSE;
+            multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+            multisampling.minSampleShading = 1.0f; // Optional
+            multisampling.pSampleMask = nullptr; // Optional
+            multisampling.alphaToCoverageEnable = VK_FALSE; // Optional
+            multisampling.alphaToOneEnable = VK_FALSE; // Optional
+
+            // we could configure a depth/stencil test if we re using a depht/stencil buffer
+            // we dont do that now
+            // VkPipelineDepthStencilStateCreateInfo 
+
+
+            // color blending (combine color given by fragment shader and color of framebuffer)
+            // can be an array for different framebuffer
+            // we dont do that 
+            VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+            colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            colorBlendAttachment.blendEnable = VK_FALSE;
+            colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+            colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+            colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+            colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+            colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+            colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
+
+            // color blending CI
+            VkPipelineColorBlendStateCreateInfo colorBlending{};
+            colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+            colorBlending.logicOpEnable = VK_FALSE;
+            colorBlending.logicOp = VK_LOGIC_OP_COPY; // Optional
+            colorBlending.attachmentCount = 1;
+            colorBlending.pAttachments = &colorBlendAttachment;
+            colorBlending.blendConstants[0] = 0.0f; // Optional
+            colorBlending.blendConstants[1] = 0.0f; // Optional
+            colorBlending.blendConstants[2] = 0.0f; // Optional
+            colorBlending.blendConstants[3] = 0.0f; // Optional
+
+
+            // we can use `uniform` values in shaders, basically global similar to dynamic state values, 
+            // which can be changed a runtime
+            // those a defined in a VkPipelineLayout object, defined as a class member
+            // we dont do that
+            // but we need a empty object to create the pipeline
+            
+            // pipeline layout CI
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+            pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+            pipelineLayoutInfo.setLayoutCount = 0; // Optional
+            pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+            pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+            pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+
+            // we cant also use `push constant` to pass value to shader, but well see that another time
+            if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) 
+                throw std::runtime_error("failed to create pipeline layout!");
+
+
+            //  yeepee! creating the pipeline ! at last!
+
+
+            //  destroy shader module, as they are now loaded in the pipeline
             vkDestroyShaderModule(device, fragShaderModule, nullptr);
             vkDestroyShaderModule(device, vertShaderModule, nullptr);
 
@@ -588,6 +758,7 @@ class TApp
 
         void cleanup() 
         {
+            vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
             for (auto imageView : swapChainImageViews) {
                 vkDestroyImageView(device, imageView, nullptr);
             }
