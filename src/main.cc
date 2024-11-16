@@ -163,15 +163,21 @@ class TApp
         VkDevice                    device;
         VkQueue                     graphicsQueue;
         VkQueue                     presentQueue;
+
         VkSwapchainKHR              swapChain;
         VkFormat                    swapChainImageFormat;
         VkExtent2D                  swapChainExtent;
         std::vector<VkImage>        swapChainImages;
         std::vector<VkImageView>    swapChainImageViews;
+
         VkRenderPass                renderPass;
         VkPipelineLayout            pipelineLayout;
         VkPipeline                  graphicsPipeline;
+
         std::vector<VkFramebuffer>  swapChainFramebuffers;
+
+        VkCommandPool               commandPool;
+        VkCommandBuffer             commandBuffer;
 
 // utils
         QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
@@ -873,6 +879,106 @@ class TApp
             }
         }
 
+        // command pool for submit command to vulkan
+        // one command pool for one family of queue
+        void createCommandPool()
+        {
+            QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+
+            VkCommandPoolCreateInfo poolInfo{};
+            poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            // allow to rerecord command buffer individually
+            poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+            poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+            if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS)
+                throw std::runtime_error("failed to create command pool!");
+        }
+
+        // create command buffer
+        // command buffer are automatically freed whe ncommand is allocated
+        void    createCommandBuffer() 
+        {
+            VkCommandBufferAllocateInfo allocInfo{};
+            allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+            allocInfo.commandPool = commandPool;
+            /*
+                VK_COMMAND_BUFFER_LEVEL_PRIMARY: Can be submitted to a queue for execution, but cannot be called from other command buffers.
+                VK_COMMAND_BUFFER_LEVEL_SECONDARY: Cannot be submitted directly, but can be called from primary command buffers.
+            */
+            allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+            allocInfo.commandBufferCount = 1;
+
+            if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS)
+                throw std::runtime_error("failed to allocate command buffers!");
+
+        }
+
+        void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+        {
+            VkCommandBufferBeginInfo beginInfo{};
+            beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+            /* 
+                VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT: The command buffer will be rerecorded right after executing it once.
+                VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT: This is a secondary command buffer that will be entirely within a single render pass.
+                VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT: The command buffer can be resubmitted while it is also already pending execution
+            */
+            beginInfo.flags = 0; // Optional
+            beginInfo.pInheritanceInfo = nullptr; // Optional, only for secondary command
+            
+            // if command already recorded, this will reset it, we cant append command to buffer
+            if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
+                throw std::runtime_error("failed to begin recording command buffer!");
+
+            // we start drawing by beginning the render pass 
+            VkRenderPassBeginInfo renderPassInfo{};
+            renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+            // bind renderpass and framebuffer to use
+            renderPassInfo.renderPass = renderPass;
+            renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+            // size of render area, anything outise will be undefined
+            renderPassInfo.renderArea.offset = {0, 0};
+            renderPassInfo.renderArea.extent = swapChainExtent;
+
+
+            // some colors idk, for VK_ATTACHMENT_LOAD_OP_CLEAR (we used it i nrender pass?)
+            VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+            renderPassInfo.clearValueCount = 1;
+            renderPassInfo.pClearValues = &clearColor;
+
+            // we wnat tot do a renderpass
+            vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+            // we bind the pipeline
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+            // we say we want some (D) dynamic stuff, here we go :
+            // we need to define them now
+            VkViewport viewport{};
+            viewport.x = 0.0f;
+            viewport.y = 0.0f;
+            viewport.width = static_cast<float>(swapChainExtent.width);
+            viewport.height = static_cast<float>(swapChainExtent.height);
+            viewport.minDepth = 0.0f;
+            viewport.maxDepth = 1.0f;
+            vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+            VkRect2D scissor{};
+            scissor.offset = {0, 0};
+            scissor.extent = swapChainExtent;
+            vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+            // now we can create the drw command
+            // very simple because we alread ystuffed a lot of data inside cmdbuffer
+            // paramter: cmd, number of vertex to draw, instaced rendering (we dont do that), vertex offset in vertex buffer, same for isntace 
+            vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+            // end renderpass
+            vkCmdEndRenderPass(commandBuffer);
+            // end cmdbuffer
+            if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) 
+                throw std::runtime_error("failed to record command buffer!");
+
+        }
+
 
         void initVulkan() 
         {
@@ -886,6 +992,8 @@ class TApp
             createRenderPass();
             createGraphicsPipeline();
             createFramebuffers();
+            createCommandPool();
+            createCommandBuffer();
         }
 
 
@@ -898,6 +1006,9 @@ class TApp
 
         void cleanup() 
         {
+            vkDestroyCommandPool(device, commandPool, nullptr);
+
+
             for (auto framebuffer : swapChainFramebuffers) {
                 vkDestroyFramebuffer(device, framebuffer, nullptr);
             }
