@@ -1087,11 +1087,11 @@ class TApp
                 glfwPollEvents();
                 drawFrame();
             }
+            vkDeviceWaitIdle(device);
         }
 
         void cleanup() 
         {
-            vkWaitForFences(device, 1, &inFlightFence, VK_TRUE, 500);
             vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
             vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
             vkDestroyFence(device, inFlightFence, nullptr);
