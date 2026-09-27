@@ -1,5 +1,2 @@
-/target
-scop
-.obj
-*.o
-.vscode
+vendor/
+build/
