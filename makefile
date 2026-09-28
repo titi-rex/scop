@@ -39,6 +39,9 @@ clean:
 
 re: clean build
 
+e-%:
+	@echo $*
+
 
 P	= "\033[0;35m▶\033[0m"
 .PHONY: build run test tidy vendor

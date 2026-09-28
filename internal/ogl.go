@@ -8,82 +8,116 @@ import (
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-const (
-	vertexShaderSource = `
-    #version 410
-    in vec3 vp;
-    void main() {
-        gl_Position = vec4(vp, 1.0);
-    }
-` + "\x00"
-
-	fragmentShaderSource = `
-    #version 410
-    out vec4 frag_colour;
-    void main() {
-        frag_colour = vec4(49, 18, 1, 1);
-    }
-` + "\x00"
-)
-
-// initOpenGL initializes OpenGL and returns an intiialized program.
-func initOpenGL() uint32 {
+// initOpenGL initializes OpenGL and returns an initialized program.
+func initOpenGL() (uint32, error) {
+	// init openGL after a current context
 	if err := gl.Init(); err != nil {
-		panic(err)
+		return 0, fmt.Errorf("failed to init openGL: %w", err)
 	}
+
+	// log openGL version
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Println("OpenGL version", version)
-	vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+
+	// compile vertex shader
+	vertexShader, err := compileShader(gl.VERTEX_SHADER, "vertouille", vertexShaderRaw)
 	if err != nil {
-		panic(err)
+		return 0, fmt.Errorf("failed to init openGL: %w", err)
 	}
-	fragmentShader, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+
+	// compile fragment shader
+	fragmentShader, err := compileShader(gl.FRAGMENT_SHADER, "fragouille", fragmentShaderRaw)
 	if err != nil {
-		panic(err)
+		return 0, fmt.Errorf("failed to init openGL: %w", err)
 	}
-	prog := gl.CreateProgram()
-	gl.AttachShader(prog, vertexShader)
-	gl.AttachShader(prog, fragmentShader)
-	gl.LinkProgram(prog)
-	return prog
+
+	// init program object
+	prog, err := initProgram(vertexShader, fragmentShader)
+	if err != nil {
+		return 0, fmt.Errorf("failed to init openGL: %w", err)
+	}
+
+	return prog, nil
 }
 
-// makeVao initializes and returns a vertex array from the points provided.
-func makeVao(points []float32) uint32 {
-	var vbo uint32
-	gl.GenBuffers(1, &vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, 4*len(points), gl.Ptr(points), gl.STATIC_DRAW)
+// create and init a program object
+func initProgram(shaders ...uint32) (uint32, error) {
+	// create a program object
+	id := gl.CreateProgram()
 
+	// attache shaders to program object
+	for _, s := range shaders {
+		gl.AttachShader(id, s)
+	}
+
+	// link a program object
+	gl.LinkProgram(id)
+
+	// retrieve the program status and logs
+	var status, logLen int32
+	gl.GetProgramiv(id, gl.LINK_STATUS, &status)
+	gl.GetProgramiv(id, gl.INFO_LOG_LENGTH, &logLen)
+
+	// print log if it exist
+	if logLen > 0 {
+		msg := strings.Repeat("\x00", int(logLen+1))
+		gl.GetProgramInfoLog(id, logLen, nil, gl.Str(msg))
+		log.Println("program link logs:", msg)
+	}
+
+	// cleanup shaders objects
+	for _, s := range shaders {
+		// gl.DetachShader(id, s)
+		gl.DeleteShader(s)
+	}
+
+	// check link status
+	if status == gl.FALSE {
+		return 0, fmt.Errorf("failed to link program")
+	}
+
+	return id, nil
+}
+
+type bufferObjectCn struct {
+	target uint32
+	usage  uint32
+}
+
+func NewBufferObject[T uint32 | float32](target uint32, data []T) uint32 {
+	var id uint32
+
+	log.Println("create new Buffer Object for target", target)
+
+	gl.GenBuffers(1, &id)
+	gl.BindBuffer(target, id)
+	if data != nil {
+		gl.BufferData(target, 4*len(data), gl.Ptr(data), gl.STATIC_DRAW)
+	}
+
+	return id
+}
+
+
+func NewVAO() uint32 {
+	// tell how to use the data in gl.ARRAY_BUFFER
+	// vertex array object, store the format of vertex data and buffer object
 	var vao uint32
 	gl.GenVertexArrays(1, &vao)
-	gl.BindVertexArray(vao)
+	gl.BindVertexArray(vao) // only one target to bind (gl.ARRAY_BUFFER)
+	// enable atribute (disable by default)
 	gl.EnableVertexAttribArray(0)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, nil)
+
+	// set the attributes for the vbo
+	// AFTER vbo/ebo creation
+	// gl.VertexAttribPointer( // bind attribute index to buffer currently bound to gl.ARRAY_BUFFER!!
+	// 	0,        // attribute 0. Arbitrary, but must match shader's layout.
+	// 	3,        // number of componant
+	// 	gl.FLOAT, // type
+	// 	false,    // normalized?
+	// 	0,        // stride, offset between element
+	// 	nil,      // array buffer offset
+	// )
 
 	return vao
-}
-
-func compileShader(source string, shaderType uint32) (uint32, error) {
-	shader := gl.CreateShader(shaderType)
-
-	csources, free := gl.Strs(source)
-	gl.ShaderSource(shader, 1, csources, nil)
-	free()
-	gl.CompileShader(shader)
-
-	var status int32
-	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
-
-		log := strings.Repeat("\x00", int(logLength+1))
-		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
-
-		return 0, fmt.Errorf("failed to compile %v: %v", source, log)
-	}
-
-	return shader, nil
 }

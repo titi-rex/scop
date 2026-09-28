@@ -73,8 +73,9 @@ func newCell(x, y int) *Cell {
 			points[i] = ((pos + size) * 2) - 1
 		}
 	}
+	// NewVBO(points)
 	return &Cell{
-		drawable: makeVao(points),
+		drawable: NewVAO(),
 		x:        x,
 		y:        y,
 	}
