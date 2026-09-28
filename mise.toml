@@ -1,3 +1,6 @@
 [tools]
 go = "1.26"
+"go:golang.org/x/tools/gopls" = "latest"
+golangci-lint = "latest"
+golangci-lint-langserver = "latest"
 gum = "latest"
