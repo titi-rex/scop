@@ -84,10 +84,15 @@ type bufferObjectCn struct {
 	usage  uint32
 }
 
+var targetName = map[uint32]string{
+	gl.ARRAY_BUFFER: "Array Buffer",
+	gl.ELEMENT_ARRAY_BUFFER: "Element Array Buffer",
+}
+
 func NewBufferObject[T uint32 | float32](target uint32, data []T) uint32 {
 	var id uint32
 
-	log.Println("create new Buffer Object for target", target)
+	log.Println("create new Buffer Object for target:", targetName[target])
 
 	gl.GenBuffers(1, &id)
 	gl.BindBuffer(target, id)

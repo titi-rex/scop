@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
+
 	"github.com/go-gl/glfw/v3.4/glfw"
+	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 const (
@@ -84,6 +86,8 @@ func main() {
 	// wireframe mode
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
+	ctr := gl.Str("transform\x00")
+
 	for !window.ShouldClose() {
 		t := time.Now() // used for fps cap
 
@@ -92,6 +96,16 @@ func main() {
 
 		// use program shader
 		gl.UseProgram(program)
+
+		// transformation matrice
+		mat := mgl.Ident4()
+		// mat = mat.Mul4(mgl.Translate3D(1, 1, 0))
+		mat = mat.Mul4(mgl.HomogRotate3DZ(mgl.DegToRad(float32(glfw.GetTime()))))
+		mat = mat.Mul4(mgl.Scale3D(0.5, 0.5, 0.5))
+
+		// set matrice
+		uloc := gl.GetUniformLocation(program, ctr)
+		gl.UniformMatrix4fv(uloc, 1, false, &mat[0])
 
 		// set the vao to draw
 		gl.BindVertexArray(vao)
