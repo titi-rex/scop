@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"runtime"
+	"scop/internal/camera"
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -38,7 +39,7 @@ var (
 		1, 2, 3, // second triangle
 	}
 
-	cameraFront = mgl.Vec3{0, 0, -1}
+	cam = camera.NewCameraZ(mgl.Vec3{0, 0, -3}, mgl.Vec3{0, 0, -1})
 )
 
 func main() {
@@ -99,10 +100,6 @@ func main() {
 	// model matrice
 	modelMat := mgl.HomogRotate3D(70, mgl.Vec3{1, 0, 0})
 
-	// view matrice comp
-	cameraPos := mgl.Vec3{0, 0, -3}
-	cameraUp := mgl.Vec3{0, 1, 0}
-
 	var viewMat, projMat mgl.Mat4
 
 	// time
@@ -112,9 +109,8 @@ func main() {
 	for !window.ShouldClose() && !q {
 		t := time.Now() // used for fps cap
 		currentFrame := glfw.GetTime()
-		deltaTime := currentFrame - lastFrame
+		deltaTime := float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
-		cameraSpeed := baseSpeed * deltaTime
 
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -123,11 +119,11 @@ func main() {
 		gl.UseProgram(program)
 
 		// compute view
-		viewMat = mgl.LookAtV(cameraPos,
-			cameraPos.Sub(cameraFront),
-			cameraUp)
+		viewMat = cam.View()
+
 		// compute projection
 		projMat = mgl.Perspective(mgl.DegToRad(float32(fov)), wWidth/wHeight, 0.1, 100)
+
 		// set matrice
 		gl.UniformMatrix4fv(modelLoc, 1, false, &modelMat[0])
 		gl.UniformMatrix4fv(viewLoc, 1, false, &viewMat[0])
@@ -142,29 +138,23 @@ func main() {
 		// Push buffer to window
 		window.SwapBuffers()
 
-
 		// poll event
 		glfw.PollEvents()
 
 		// do smtg on key press
 		doKeyPress(glfw.KeyEscape, func() { q = true })
+
 		// Z
-		doKeyPress(glfw.KeyW, func() { cameraPos = cameraPos.Sub(cameraFront.Mul(float32(cameraSpeed))) })
-		doKeyPress(glfw.KeyS, func() { cameraPos = cameraPos.Add(cameraFront.Mul(float32(cameraSpeed))) })
+		doKeyPress(glfw.KeyW, func() { cam.Move(float32(deltaTime)) })
+		doKeyPress(glfw.KeyS, func() { cam.Move(camera.Forward, deltaTime)) })
 
 		// X
-		doKeyPress(glfw.KeyD, func() {
-			cameraPos = cameraPos.Sub(cameraFront.Cross(cameraUp).Normalize().Mul(float32(cameraSpeed)))
-		})
-		doKeyPress(glfw.KeyA, func() { cameraPos = cameraPos.Add(cameraFront.Cross(cameraUp).Normalize().Mul(float32(cameraSpeed))) })
+		doKeyPress(glfw.KeyD, func() { cam.Move(camera.Forward, deltaTime)) })
+		doKeyPress(glfw.KeyA, func() { cam.Move(camera.Direction(camera.Forward, deltaTime)) })
 
 		// Y
-		doKeyPress(glfw.KeyH, func() {
-			cameraPos = cameraPos.Add(mgl.Vec3{0, float32(cameraSpeed), 0})
-		})
-		doKeyPress(glfw.KeyN, func() {
-			cameraPos = cameraPos.Sub(mgl.Vec3{0, float32(cameraSpeed), 0})
-		})
+		doKeyPress(glfw.KeyH, func() { cam.Move(camera.Direction(camera.Forward, deltaTime)) })
+		doKeyPress(glfw.KeyN, func() { cam.Move(camera.Direction(camera.Forward, deltaTime)) })
 
 		// cap fps
 		time.Sleep(time.Second/time.Duration(fps) - time.Since(t))
@@ -173,6 +163,7 @@ func main() {
 
 func doKeyPress(k glfw.Key, do func()) {
 	if glfw.GetCurrentContext().GetKey(k) == glfw.Press {
+		// log.Println("key pressed", k)
 		do()
 	}
 }

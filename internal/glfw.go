@@ -90,7 +90,7 @@ func CursorPosHandler(w *glfw.Window, xpos, ypos float64) {
 		float32(math.Sin(Rad(pitch))),
 		float32(math.Sin(Rad(yaw)) * math.Cos(Rad(pitch))),
 	}
-	cameraFront = front.Normalize()
+	cam.SetCenter(front.Normalize())
 }
 
 func ScrollHandler(w *glfw.Window, xoffset, yoffset float64) {
