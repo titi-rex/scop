@@ -39,7 +39,7 @@ var (
 		1, 2, 3, // second triangle
 	}
 
-	cam = camera.NewCameraZ(mgl.Vec3{0, 0, -3}, mgl.Vec3{0, 0, -1})
+	cam = camera.NewOrhto(mgl.Vec3{0, 0, -3}, mgl.Vec3{0, 0, -1})
 )
 
 func main() {
@@ -145,16 +145,16 @@ func main() {
 		doKeyPress(glfw.KeyEscape, func() { q = true })
 
 		// Z
-		doKeyPress(glfw.KeyW, func() { cam.Move(float32(deltaTime)) })
-		doKeyPress(glfw.KeyS, func() { cam.Move(camera.Forward, deltaTime)) })
+		doKeyPress(glfw.KeyW, func() { cam.Move(camera.Forward, float32(deltaTime)) })
+		doKeyPress(glfw.KeyS, func() { cam.Move(camera.Backward, deltaTime) })
 
 		// X
-		doKeyPress(glfw.KeyD, func() { cam.Move(camera.Forward, deltaTime)) })
-		doKeyPress(glfw.KeyA, func() { cam.Move(camera.Direction(camera.Forward, deltaTime)) })
+		doKeyPress(glfw.KeyD, func() { cam.Move(camera.Right, deltaTime) })
+		doKeyPress(glfw.KeyA, func() { cam.Move(camera.Left, deltaTime) })
 
 		// Y
-		doKeyPress(glfw.KeyH, func() { cam.Move(camera.Direction(camera.Forward, deltaTime)) })
-		doKeyPress(glfw.KeyN, func() { cam.Move(camera.Direction(camera.Forward, deltaTime)) })
+		doKeyPress(glfw.KeyH, func() { cam.Move(camera.Up, deltaTime) })
+		doKeyPress(glfw.KeyN, func() { cam.Move(camera.Down, deltaTime) })
 
 		// cap fps
 		time.Sleep(time.Second/time.Duration(fps) - time.Since(t))
@@ -165,18 +165,6 @@ func doKeyPress(k glfw.Key, do func()) {
 	if glfw.GetCurrentContext().GetKey(k) == glfw.Press {
 		// log.Println("key pressed", k)
 		do()
-	}
-}
-
-// TODO: set as callback to glfw.SetKeyCallback
-//
-//lint:ignore U1000
-func processKey(k glfw.Key) bool {
-	switch k {
-	case glfw.KeyEscape:
-		return true
-	default:
-		return false
 	}
 }
 
