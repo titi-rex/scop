@@ -10,20 +10,19 @@ import (
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-
 	"github.com/go-gl/glfw/v3.4/glfw"
 	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 const (
 	fps       = 31
-	fSize     = 4
 	radius    = float32(10)
 	baseSpeed = 2.5
 )
 
 var (
-	cam = camera.NewBasic(mgl.Vec3{0, 0, -9}, mgl.Vec3{0, 0, -1})
+	// cam = camera.NewBasic(mgl.Vec3{0, 0, -9}, mgl.Vec3{0, 0, -1})
+	cam = camera.NewLocked()
 )
 
 const (
@@ -94,16 +93,14 @@ func main() {
 	// vao.2
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
 	gl.EnableVertexAttribArray(0)
-	// gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
-	// gl.EnableVertexAttribArray(1)
 
 	// wireframe mode
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
 	// model matrice
-	modelMat := mgl.HomogRotate3D(70, mgl.Vec3{1, 0, 0})
+	// modelMat := mgl.HomogRotate3D(70, mgl.Vec3{1, 0, 0})
 
-	var viewMat, projMat mgl.Mat4
+	projMat := mgl.Ident4()
 
 	// time
 	var lastFrame float64
@@ -121,16 +118,13 @@ func main() {
 		// use program shader
 		shader.Use()
 
-		// compute view
-		viewMat = cam.View()
-
 		// compute projection
-		projMat = mgl.Perspective(mgl.DegToRad(float32(fov)), wWidth/wHeight, 0.1, 100)
+		// projMat = mgl.Perspective(mgl.DegToRad(float32(fov)), wWidth/wHeight, 0.1, 100)
 
 		// set matrice
 		err = errors.Join(
-			shader.SetUVMat4(uVarModel, modelMat),
-			shader.SetUVMat4(uVarView, viewMat),
+			shader.SetUVMat4(uVarModel, obj.Matrice),
+			shader.SetUVMat4(uVarView, cam.View()),
 			shader.SetUVMat4(uVarProjection, projMat),
 		)
 		if err != nil {

@@ -9,6 +9,8 @@ import (
 
 	"strconv"
 	"strings"
+
+	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 type token string
@@ -25,7 +27,8 @@ type Object struct {
 	Name     string
 	Vertices []float32
 	Indices  []uint32
-	ICount int32
+	ICount   int32
+	Matrice  mgl.Mat4
 
 	tmpIndices []int32
 }
@@ -39,7 +42,9 @@ func NewObj(path string) (Object, error) {
 
 	log.Println("Load obj from", path)
 
-	obj := Object{}
+	obj := Object{
+		Matrice: mgl.Ident4(),
+	}
 	scanner := bufio.NewScanner(file)
 
 	for scanner.Scan() {
@@ -87,7 +92,7 @@ func (o *Object) loadVertice(raw []string) error {
 
 func (o *Object) loadFace(raw []string) error {
 	var values []int32
-	for _, s := range(raw) {
+	for _, s := range raw {
 		v, err := strconv.ParseInt(s, 10, 32)
 		if err != nil {
 			return err
@@ -99,7 +104,7 @@ func (o *Object) loadFace(raw []string) error {
 	}
 
 	var n int32
-	for i := 1; i + 1 < len(raw); i += 1 {
+	for i := 1; i+1 < len(raw); i += 1 {
 		o.tmpIndices = append(o.tmpIndices, int32(values[0]))
 		o.tmpIndices = append(o.tmpIndices, int32(values[i]))
 		o.tmpIndices = append(o.tmpIndices, int32(values[i+1]))
@@ -108,7 +113,6 @@ func (o *Object) loadFace(raw []string) error {
 
 	return nil
 }
-
 
 func (o *Object) convertIndices() {
 	nv := int32(len(o.Vertices))
@@ -122,3 +126,5 @@ func (o *Object) convertIndices() {
 		o.Indices = append(o.Indices, uint32(v))
 	}
 }
+
+// func (o *Object)
