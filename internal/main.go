@@ -6,6 +6,7 @@ import (
 	"log"
 	"runtime"
 	"scop/internal/camera"
+	"scop/internal/parser"
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -22,25 +23,7 @@ const (
 )
 
 var (
-	triangle = []float32{
-		0, 0.5, 0, 1, 0, 0,
-		-0.5, -0.5, 0, 0, 1, 0,
-		0.5, -0.5, 0, 0, 0, 1,
-	}
-
-	vertices = []float32{
-		0.5, 0.5, 0.0, // top right
-		0.5, -0.5, 0.0, // bottom right
-		-0.5, -0.5, 0.0, // bottom let
-		-0.5, 0.5, 0.0, // top let
-	}
-
-	indices = []uint32{
-		0, 1, 3, // premier triangle
-		1, 2, 3, // second triangle
-	}
-
-	cam = camera.NewBasic(mgl.Vec3{0, 0, -3}, mgl.Vec3{0, 0, -1})
+	cam = camera.NewBasic(mgl.Vec3{0, 0, -9}, mgl.Vec3{0, 0, -1})
 )
 
 const (
@@ -50,6 +33,13 @@ const (
 )
 
 func main() {
+	// _, err := parser.NewObj("./resources/42.obj")
+	// if err != nil {
+	// 	fmt.Printf("error loading obj: %s\n", err.Error())
+	// 	return
+	// }
+	// return
+
 	runtime.LockOSThread()
 
 	if err := initGlfw(); err != nil {
@@ -76,32 +66,39 @@ func main() {
 		return
 	}
 
-	// vao.1
+	// init vao
 	vao := NewVAO()
 	defer func() {
 		gl.DeleteVertexArrays(1, &vao)
 	}()
 
-	// vbo
-	vbo := NewBufferObject(gl.ARRAY_BUFFER, triangle)
+	// load object from file
+	obj, err := parser.NewObj("./resources/42.obj")
+	if err != nil {
+		fmt.Printf("error loading obj: %s\n", err.Error())
+		return
+	}
+
+	// load obj vertice into vbo
+	vbo := NewBufferObject(gl.ARRAY_BUFFER, obj.Vertices)
 	defer func() {
 		gl.DeleteBuffers(1, &vbo)
 	}()
 
-	// ebo
-	// ebo := NewBufferObject(gl.ELEMENT_ARRAY_BUFFER, indices)
-	// defer func() {
-	// 	gl.DeleteBuffers(1, &ebo)
-	// }()
+	// load obj face into ebo
+	ebo := NewBufferObject(gl.ELEMENT_ARRAY_BUFFER, obj.Indices)
+	defer func() {
+		gl.DeleteBuffers(1, &ebo)
+	}()
 
 	// vao.2
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, nil)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
 	gl.EnableVertexAttribArray(0)
-	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
-	gl.EnableVertexAttribArray(1)
+	// gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
+	// gl.EnableVertexAttribArray(1)
 
 	// wireframe mode
-	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
 	// model matrice
 	modelMat := mgl.HomogRotate3D(70, mgl.Vec3{1, 0, 0})
@@ -143,8 +140,7 @@ func main() {
 		// set the vao to draw
 		gl.BindVertexArray(vao)
 		// draw
-		// gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
-		gl.DrawArrays(gl.TRIANGLES, 0, 3)
+		gl.DrawElements(gl.TRIANGLES, obj.ICount, gl.UNSIGNED_INT, nil)
 
 		// Push buffer to window
 		window.SwapBuffers()

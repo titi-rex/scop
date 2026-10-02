@@ -38,7 +38,7 @@ func initOpenGL() error {
 // NewBufferObject create a BO for target and fill it with data
 // if data is != nil
 // Set usage to [gl.STATIC_DRAW]
-func NewBufferObject[T uint32 | float32](target uint32, data []T) uint32 {
+func NewBufferObject[T uint32 | int32 | float32](target uint32, data []T) uint32 {
 	var id uint32
 
 	log.Println("create new Buffer Object for target:", targetName[target])
