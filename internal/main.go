@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"runtime"
@@ -22,9 +23,9 @@ const (
 
 var (
 	triangle = []float32{
-		0, 0.5, 0,
-		-0.5, -0.5, 0,
-		0.5, -0.5, 0,
+		0, 0.5, 0, 1, 0, 0,
+		-0.5, -0.5, 0, 0, 1, 0,
+		0.5, -0.5, 0, 0, 0, 1,
 	}
 
 	vertices = []float32{
@@ -42,6 +43,12 @@ var (
 	cam = camera.NewBasic(mgl.Vec3{0, 0, -3}, mgl.Vec3{0, 0, -1})
 )
 
+const (
+	uVarModel      = "model"
+	uVarView       = "view"
+	uVarProjection = "projection"
+)
+
 func main() {
 	runtime.LockOSThread()
 
@@ -57,45 +64,44 @@ func main() {
 		return
 	}
 
-	program, err := initOpenGL()
+	err = initOpenGL()
 	if err != nil {
 		fmt.Printf("end: %s\n", err.Error())
 		return
 	}
 
-	log.Println("enable Depth Test")
-	gl.Enable((gl.DEPTH_TEST))
-
-	var vao, vbo, ebo uint32
+	shader, err := initShader()
+	if err != nil {
+		fmt.Printf("end: %s\n", err.Error())
+		return
+	}
 
 	// vao.1
-	vao = NewVAO()
+	vao := NewVAO()
 	defer func() {
 		gl.DeleteVertexArrays(1, &vao)
 	}()
 
 	// vbo
-	vbo = NewBufferObject(gl.ARRAY_BUFFER, vertices)
+	vbo := NewBufferObject(gl.ARRAY_BUFFER, triangle)
 	defer func() {
 		gl.DeleteBuffers(1, &vbo)
 	}()
 
 	// ebo
-	ebo = NewBufferObject(gl.ELEMENT_ARRAY_BUFFER, indices)
-	defer func() {
-		gl.DeleteBuffers(1, &ebo)
-	}()
+	// ebo := NewBufferObject(gl.ELEMENT_ARRAY_BUFFER, indices)
+	// defer func() {
+	// 	gl.DeleteBuffers(1, &ebo)
+	// }()
 
 	// vao.2
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 6*4, nil)
+	gl.EnableVertexAttribArray(0)
+	gl.VertexAttribPointerWithOffset(1, 3, gl.FLOAT, false, 6*4, 3*4)
+	gl.EnableVertexAttribArray(1)
 
 	// wireframe mode
 	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-
-	// shader variable location
-	modelLoc := gl.GetUniformLocation(program, gl.Str("model\x00"))
-	viewLoc := gl.GetUniformLocation(program, gl.Str("view\x00"))
-	projLoc := gl.GetUniformLocation(program, gl.Str("projection\x00"))
 
 	// model matrice
 	modelMat := mgl.HomogRotate3D(70, mgl.Vec3{1, 0, 0})
@@ -116,7 +122,7 @@ func main() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		// use program shader
-		gl.UseProgram(program)
+		shader.Use()
 
 		// compute view
 		viewMat = cam.View()
@@ -125,15 +131,20 @@ func main() {
 		projMat = mgl.Perspective(mgl.DegToRad(float32(fov)), wWidth/wHeight, 0.1, 100)
 
 		// set matrice
-		gl.UniformMatrix4fv(modelLoc, 1, false, &modelMat[0])
-		gl.UniformMatrix4fv(viewLoc, 1, false, &viewMat[0])
-		gl.UniformMatrix4fv(projLoc, 1, false, &projMat[0])
+		err = errors.Join(
+			shader.SetUVMat4(uVarModel, modelMat),
+			shader.SetUVMat4(uVarView, viewMat),
+			shader.SetUVMat4(uVarProjection, projMat),
+		)
+		if err != nil {
+			log.Println("bad code!", err.Error())
+		}
 
 		// set the vao to draw
 		gl.BindVertexArray(vao)
 		// draw
-		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
-		// gl.DrawArrays(gl.TRIANGLES, 0, 3)
+		// gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
+		gl.DrawArrays(gl.TRIANGLES, 0, 3)
 
 		// Push buffer to window
 		window.SwapBuffers()
@@ -168,30 +179,30 @@ func doKeyPress(k glfw.Key, do func()) {
 	}
 }
 
-// func draw(cells World, window *glfw.Window, program uint32) {
-// gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-// 	gl.UseProgram(program)
+func initShader() (Shader, error) {
+	// create shader
+	shader := NewShader()
 
-// 	for _, rows := range cells {
-// 		for _, c := range rows {
-// 			c.draw()
-// 		}
-// 	}
+	// compile source
+	err := errors.Join(
+		shader.CompileSource(gl.VERTEX_SHADER, "vertouille", vertexShaderRaw),
+		shader.CompileSource(gl.FRAGMENT_SHADER, "fragouille", fragmentShaderRaw),
+	)
+	if err != nil {
+		return Shader{}, err
+	}
 
-// }
+	// link shader
+	err = shader.Link()
+	if err != nil {
+		return Shader{}, err
+	}
 
-// func (c *Cell) draw() {
-// 	if !c.alive {
-// 		return
-// 	}
+	// shader variable location
+	err = shader.SearchUVAll(uVarModel, uVarView, uVarProjection)
+	if err != nil {
+		return Shader{}, err
+	}
 
-// 	gl.BindVertexArray(c.drawable)
-// 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(square)/3))
-// }
-// // transformation matrice
-// mat := mgl.Ident4()
-// // mat = mat.Mul4(mgl.Translate3D(1, 1, 0))
-// mat = mat.Mul4(mgl.HomogRotate3DZ(mgl.DegToRad(float32(glfw.GetTime()))))
-// mat = mat.Mul4(mgl.Scale3D(0.5, 0.5, 0.5))
-
-// rotatating view
+	return shader, nil
+}
