@@ -46,4 +46,5 @@ func (c *yLockedCamera) Move(d Direction, deltaTime float32) {
 	case Up:
 	case Down:
 	}
+	c.core.eye[1] = 0
 }

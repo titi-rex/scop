@@ -39,7 +39,7 @@ var (
 		1, 2, 3, // second triangle
 	}
 
-	cam = camera.NewOrhto(mgl.Vec3{0, 0, -3}, mgl.Vec3{0, 0, -1})
+	cam = camera.NewBasic(mgl.Vec3{0, 0, -3}, mgl.Vec3{0, 0, -1})
 )
 
 func main() {

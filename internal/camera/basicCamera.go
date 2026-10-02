@@ -10,8 +10,8 @@ type basicCamera struct {
 
 var _ Camera = (*basicCamera)(nil)
 
-// NewBasicCamera create a nice Camera to start with
-func NewBasicCamera(pos, center mgl.Vec3) basicCamera {
+// NewBasic create a nice Camera to start with
+func NewBasic(pos, center mgl.Vec3) basicCamera {
 	return basicCamera{
 		core: core{
 			eye:    pos,
