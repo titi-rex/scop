@@ -8,7 +8,6 @@ import (
 )
 
 func NewImg(file string) (*image.RGBA, error) {
-
 	imgFile, err := os.Open("./resources/wall.png")
 	if err != nil {
 		return nil, fmt.Errorf("texture %q not found on disk: %w", file, err)

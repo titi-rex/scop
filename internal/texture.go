@@ -7,14 +7,10 @@ import (
 )
 
 func NewTexture(rgba *image.RGBA) uint32 {
-	var texture uint32
+	var id uint32
 	gl.Enable(gl.TEXTURE_2D)
-	gl.GenTextures(1, &texture)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.GenTextures(1, &id)
+	gl.BindTexture(gl.TEXTURE_2D, id)
 	gl.TexImage2D(
 		gl.TEXTURE_2D,
 		0,
@@ -26,5 +22,6 @@ func NewTexture(rgba *image.RGBA) uint32 {
 		gl.UNSIGNED_BYTE,
 		gl.Ptr(rgba.Pix))
 
-	return texture
+	gl.GenerateMipmap(id)
+	return id
 }

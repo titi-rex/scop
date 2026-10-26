@@ -99,6 +99,11 @@ func main() {
 	// wireframe mode
 	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+
 	r, err := NewImg("./resources/wall.png")
 	if err != nil {
 		fmt.Printf("strop: %s\n", err.Error())
@@ -106,7 +111,7 @@ func main() {
 	}
 
 	tid := NewTexture(r)
-	// _ = tid
+	_ = r
 
 
 	// time
