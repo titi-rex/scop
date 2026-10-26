@@ -98,11 +98,15 @@ func main() {
 
 	// wireframe mode
 	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
-	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
-	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
-	// os.Open("./resources/wall.png")
+	r, err := NewImg("./resources/wall.png")
+	if err != nil {
+		fmt.Printf("strop: %s\n", err.Error())
+		return
+	}
+
+	tid := NewTexture(r)
+	// _ = tid
 
 
 	// time
