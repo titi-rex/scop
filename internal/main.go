@@ -21,8 +21,11 @@ const (
 )
 
 var (
-	// cam = camera.NewBasic(mgl.Vec3{0, 0, -9}, mgl.Vec3{0, 0, -1})
-	cam = camera.NewLocked()
+	cam = camera.NewBasic(mgl.Vec3{2, 0, -8}, mgl.Vec3{0, 0, 0})
+	// cam = camera.NewOrhto(mgl.Vec3{0, 0, 0}, mgl.Vec3{0, 0, 0})
+	// cam = camera.NewLocked()
+	loopStatus = false
+	deltaTime = float32(0)
 )
 
 const (
@@ -32,11 +35,13 @@ const (
 )
 
 func main() {
-	// _, err := parser.NewObj("./resources/42.obj")
+	// obj1, err := parser.NewObj("./resources/42.obj")
 	// if err != nil {
 	// 	fmt.Printf("error loading obj: %s\n", err.Error())
 	// 	return
 	// }
+	// log.Println("n sommet", len(obj1.Vertices) / 3)
+	// log.Println("n idx", len(obj1.Indices))
 	// return
 
 	runtime.LockOSThread()
@@ -93,23 +98,19 @@ func main() {
 	// vao.2
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
 	gl.EnableVertexAttribArray(0)
+	gl.BindVertexArray(0)
 
 	// wireframe mode
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
-	// model matrice
-	// modelMat := mgl.HomogRotate3D(70, mgl.Vec3{1, 0, 0})
-
-	projMat := mgl.Ident4()
-
 	// time
 	var lastFrame float64
+	var ir float64
 
-	q := false
-	for !window.ShouldClose() && !q {
+	for !window.ShouldClose() && !loopStatus {
 		t := time.Now() // used for fps cap
 		currentFrame := glfw.GetTime()
-		deltaTime := float32(currentFrame - lastFrame)
+		deltaTime = float32(currentFrame - lastFrame)
 		lastFrame = currentFrame
 
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
@@ -119,22 +120,29 @@ func main() {
 		shader.Use()
 
 		// compute projection
-		// projMat = mgl.Perspective(mgl.DegToRad(float32(fov)), wWidth/wHeight, 0.1, 100)
+		projMat := mgl.Perspective(mgl.DegToRad(float32(fov)), wWidth/wHeight, 0.1, 100)
+
+		// m1 := obj.Matrice.Mul4(mgl.Translate3D(.5,0,0))
+		// m1 = m1.Mul4(mgl.HomogRotate3D(float32(glfw.GetTime() * Rad(-90.0)), mgl.Vec3{0,1,0}))
+		ir += 0.5
+		m1 := RotateY(float32(-90 + ir))
 
 		// set matrice
 		err = errors.Join(
-			shader.SetUVMat4(uVarModel, obj.Matrice),
+			shader.SetUVMat4(uVarModel, m1),
 			shader.SetUVMat4(uVarView, cam.View()),
 			shader.SetUVMat4(uVarProjection, projMat),
 		)
 		if err != nil {
 			log.Println("bad code!", err.Error())
+			return
 		}
 
 		// set the vao to draw
 		gl.BindVertexArray(vao)
 		// draw
-		gl.DrawElements(gl.TRIANGLES, obj.ICount, gl.UNSIGNED_INT, nil)
+		gl.DrawElements(gl.TRIANGLES, obj.IndicesCount, gl.UNSIGNED_INT, nil)
+		gl.BindVertexArray(0)
 
 		// Push buffer to window
 		window.SwapBuffers()
@@ -142,30 +150,9 @@ func main() {
 		// poll event
 		glfw.PollEvents()
 
-		// do smtg on key press
-		doKeyPress(glfw.KeyEscape, func() { q = true })
-
-		// Z
-		doKeyPress(glfw.KeyW, func() { cam.Move(camera.Forward, float32(deltaTime)) })
-		doKeyPress(glfw.KeyS, func() { cam.Move(camera.Backward, deltaTime) })
-
-		// X
-		doKeyPress(glfw.KeyD, func() { cam.Move(camera.Right, deltaTime) })
-		doKeyPress(glfw.KeyA, func() { cam.Move(camera.Left, deltaTime) })
-
-		// Y
-		doKeyPress(glfw.KeyH, func() { cam.Move(camera.Up, deltaTime) })
-		doKeyPress(glfw.KeyN, func() { cam.Move(camera.Down, deltaTime) })
 
 		// cap fps
 		time.Sleep(time.Second/time.Duration(fps) - time.Since(t))
-	}
-}
-
-func doKeyPress(k glfw.Key, do func()) {
-	if glfw.GetCurrentContext().GetKey(k) == glfw.Press {
-		// log.Println("key pressed", k)
-		do()
 	}
 }
 
@@ -189,7 +176,11 @@ func initShader() (Shader, error) {
 	}
 
 	// shader variable location
-	err = shader.SearchUVAll(uVarModel, uVarView, uVarProjection)
+	err = shader.SearchUVAll(
+		uVarModel,
+		uVarView,
+		uVarProjection,
+	)
 	if err != nil {
 		return Shader{}, err
 	}

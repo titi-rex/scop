@@ -49,4 +49,5 @@ func (c *orthoCamera) Move(d Direction, deltaTime float32) {
 	case Down:
 		c.core.yOrthoMinus(velocity)
 	}
+	// log.Println("camera:", c.core.eye)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"scop/internal/camera"
 
 	"github.com/go-gl/glfw/v3.4/glfw"
 	mgl "github.com/go-gl/mathgl/mgl32"
@@ -22,6 +23,8 @@ var (
 	yaw   float64 = -90
 	pitch float64 = 0
 	fov   float64 = 45
+
+	firstTime = true
 )
 
 // initGlfw initializes glfw.
@@ -62,12 +65,17 @@ func initWindow() (*glfw.Window, error) {
 
 	window.SetCursorPosCallback(CursorPosHandler)
 	window.SetScrollCallback(ScrollHandler)
-	// window.SetKeyCallback(KeyHandler)
+	window.SetKeyCallback(KeyHandler)
 
 	return window, nil
 }
 
 func CursorPosHandler(w *glfw.Window, xpos, ypos float64) {
+	if firstTime {
+		curLastX = xpos
+		curLastY = ypos
+		firstTime = false
+	}
 	xoff := xpos - curLastX
 	yoff := ypos - curLastY
 	curLastX = xpos
@@ -106,5 +114,36 @@ func ScrollHandler(w *glfw.Window, xoffset, yoffset float64) {
 }
 
 func KeyHandler(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+	// if action != glfw.Press {
+	// 	return
+	// }
 
+	switch key {
+	case glfw.KeyEscape:
+		loopStatus = true
+
+	// X
+	case glfw.KeyW:
+		cam.Move(camera.Forward, float32(deltaTime))
+	case glfw.KeyS:
+		cam.Move(camera.Backward, deltaTime)
+
+	// Y
+	case glfw.KeyD:
+		cam.Move(camera.Right, deltaTime)
+	case glfw.KeyA:
+		cam.Move(camera.Left, deltaTime)
+
+	// Z
+	case glfw.KeyH:
+		cam.Move(camera.Up, deltaTime)
+	case glfw.KeyN:
+		cam.Move(camera.Down, deltaTime)
+	}
+}
+func doKeyPress(k glfw.Key, do func()) {
+	if glfw.GetCurrentContext().GetKey(k) == glfw.Press {
+		// log.Println("key pressed", k)
+		do()
+	}
 }
