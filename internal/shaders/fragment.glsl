@@ -1,9 +1,10 @@
 #version 410
 
-in vec3 vertexColor;
-
 out vec4 color;
 
 void main() {
-    color = vec4(vertexColor, 1);
+    float r;
+
+    r = (gl_PrimitiveID % 255) / 255.0f;
+    color = vec4(r, r, r, 1);
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"runtime"
 	"scop/internal/camera"
 	"scop/internal/parser"
@@ -21,11 +22,9 @@ const (
 )
 
 var (
-	cam = camera.NewBasic(mgl.Vec3{2, 0, -8}, mgl.Vec3{0, 0, 0})
-	// cam = camera.NewOrhto(mgl.Vec3{0, 0, 0}, mgl.Vec3{0, 0, 0})
-	// cam = camera.NewLocked()
+	cam = camera.NewOrhto(mgl.Vec3{0, 0, 3}, mgl.Vec3{0, 0, 1})
 	loopStatus = false
-	deltaTime = float32(0)
+	deltaTime  = float32(0)
 )
 
 const (
@@ -35,16 +34,19 @@ const (
 )
 
 func main() {
-	// obj1, err := parser.NewObj("./resources/42.obj")
-	// if err != nil {
-	// 	fmt.Printf("error loading obj: %s\n", err.Error())
-	// 	return
-	// }
-	// log.Println("n sommet", len(obj1.Vertices) / 3)
-	// log.Println("n idx", len(obj1.Indices))
-	// return
-
 	runtime.LockOSThread()
+
+	if len(os.Args) != 2 {
+		fmt.Println("usage: ./scop file.obj")
+		return
+	}
+
+	// load object from file
+	obj, err := parser.NewObj(os.Args[1])
+	if err != nil {
+		fmt.Printf("error loading obj: %s\n", err.Error())
+		return
+	}
 
 	if err := initGlfw(); err != nil {
 		fmt.Printf("end: %s\n", err.Error())
@@ -76,12 +78,6 @@ func main() {
 		gl.DeleteVertexArrays(1, &vao)
 	}()
 
-	// load object from file
-	obj, err := parser.NewObj("./resources/42.obj")
-	if err != nil {
-		fmt.Printf("error loading obj: %s\n", err.Error())
-		return
-	}
 
 	// load obj vertice into vbo
 	vbo := NewBufferObject(gl.ARRAY_BUFFER, obj.Vertices)
@@ -101,11 +97,22 @@ func main() {
 	gl.BindVertexArray(0)
 
 	// wireframe mode
-	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT);
+	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT);
+	// gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+	// os.Open("./resources/wall.png")
+
 
 	// time
 	var lastFrame float64
-	var ir float64
+
+	// model
+	const rotationSpeed = 1.5
+	const moveSpeed = 0.05
+	angle := mgl.Vec3{0, -90, 0}
+	pos := mgl.Vec3{}
 
 	for !window.ShouldClose() && !loopStatus {
 		t := time.Now() // used for fps cap
@@ -122,10 +129,12 @@ func main() {
 		// compute projection
 		projMat := mgl.Perspective(mgl.DegToRad(float32(fov)), wWidth/wHeight, 0.1, 100)
 
-		// m1 := obj.Matrice.Mul4(mgl.Translate3D(.5,0,0))
-		// m1 = m1.Mul4(mgl.HomogRotate3D(float32(glfw.GetTime() * Rad(-90.0)), mgl.Vec3{0,1,0}))
-		ir += 0.5
-		m1 := RotateY(float32(-90 + ir))
+		// compute model matrice
+		rx := mgl.HomogRotate3DX(Rad(angle.X()))
+		ry := mgl.HomogRotate3DY(Rad(angle.Y()))
+		rz := mgl.HomogRotate3DZ(Rad(angle.Z()))
+		tr := mgl.Translate3D(pos.X(), pos.Y(), pos.Z())
+		m1 := tr.Mul4(rz.Mul4(ry.Mul4(rx)))
 
 		// set matrice
 		err = errors.Join(
@@ -138,21 +147,38 @@ func main() {
 			return
 		}
 
-		// set the vao to draw
-		gl.BindVertexArray(vao)
 		// draw
+		gl.BindVertexArray(vao)
 		gl.DrawElements(gl.TRIANGLES, obj.IndicesCount, gl.UNSIGNED_INT, nil)
 		gl.BindVertexArray(0)
-
-		// Push buffer to window
 		window.SwapBuffers()
 
-		// poll event
+		// handle event
 		glfw.PollEvents()
-
+		doKeyPress(glfw.KeyEscape, func() { loopStatus = true })
+		doKeyPress(glfw.KeyQ, func() { loopStatus = true })
+		doKeyPress(glfw.KeyR, func() {
+			angle = mgl.Vec3{0, -90, 0}
+			pos = mgl.Vec3{}
+		})
+		doKeyPress(glfw.KeyX, func() { angle[0] += rotationSpeed })
+		doKeyPress(glfw.KeyY, func() { angle[1] += rotationSpeed })
+		doKeyPress(glfw.KeyZ, func() { angle[2] += rotationSpeed })
+		doKeyPress(glfw.KeyD, func() { pos[0] += moveSpeed })
+		doKeyPress(glfw.KeyA, func() { pos[0] -= moveSpeed })
+		doKeyPress(glfw.KeySpace, func() { pos[1] += moveSpeed })
+		doKeyPress(glfw.KeyC, func() { pos[1] -= moveSpeed })
+		doKeyPress(glfw.KeyS, func() { pos[2] += moveSpeed })
+		doKeyPress(glfw.KeyW, func() { pos[2] -= moveSpeed })
 
 		// cap fps
 		time.Sleep(time.Second/time.Duration(fps) - time.Since(t))
+	}
+}
+
+func doKeyPress(k glfw.Key, do func()) {
+	if glfw.GetCurrentContext().GetKey(k) == glfw.Press {
+		do()
 	}
 }
 

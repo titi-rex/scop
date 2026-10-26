@@ -63,9 +63,9 @@ func initWindow() (*glfw.Window, error) {
 	window.SetInputMode(glfw.StickyKeysMode, glfw.True)
 	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 
-	window.SetCursorPosCallback(CursorPosHandler)
-	window.SetScrollCallback(ScrollHandler)
-	window.SetKeyCallback(KeyHandler)
+	// window.SetCursorPosCallback(CursorPosHandler)
+	// window.SetScrollCallback(ScrollHandler)
+	// window.SetKeyCallback(KeyHandler)
 
 	return window, nil
 }
@@ -139,11 +139,5 @@ func KeyHandler(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, 
 		cam.Move(camera.Up, deltaTime)
 	case glfw.KeyN:
 		cam.Move(camera.Down, deltaTime)
-	}
-}
-func doKeyPress(k glfw.Key, do func()) {
-	if glfw.GetCurrentContext().GetKey(k) == glfw.Press {
-		// log.Println("key pressed", k)
-		do()
 	}
 }
