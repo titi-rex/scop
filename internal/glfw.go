@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"scop/internal/camera"
+	"scop/internal/ogm"
 
 	"github.com/go-gl/glfw/v3.4/glfw"
 	mgl "github.com/go-gl/mathgl/mgl32"
@@ -94,9 +95,9 @@ func CursorPosHandler(w *glfw.Window, xpos, ypos float64) {
 	}
 
 	front := mgl.Vec3{
-		float32(math.Cos(Rad(yaw)) * math.Cos(Rad(pitch))),
-		float32(math.Sin(Rad(pitch))),
-		float32(math.Sin(Rad(yaw)) * math.Cos(Rad(pitch))),
+		float32(math.Cos(ogm.Rad(yaw)) * math.Cos(ogm.Rad(pitch))),
+		float32(math.Sin(ogm.Rad(pitch))),
+		float32(math.Sin(ogm.Rad(yaw)) * math.Cos(ogm.Rad(pitch))),
 	}
 	cam.SetCenter(front.Normalize())
 }

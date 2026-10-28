@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 	"scop/internal/camera"
+	"scop/internal/ogm"
 	"scop/internal/parser"
 	"time"
 
@@ -22,7 +23,7 @@ const (
 )
 
 var (
-	cam = camera.NewOrhto(mgl.Vec3{0, 0, 3}, mgl.Vec3{0, 0, 1})
+	cam        = camera.NewOrhto(mgl.Vec3{0, 0, 3}, mgl.Vec3{0, 0, 1})
 	loopStatus = false
 	deltaTime  = float32(0)
 )
@@ -78,7 +79,6 @@ func main() {
 		gl.DeleteVertexArrays(1, &vao)
 	}()
 
-
 	// load obj vertice into vbo
 	vbo := NewBufferObject(gl.ARRAY_BUFFER, obj.Vertices)
 	defer func() {
@@ -104,24 +104,24 @@ func main() {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
-	r, err := NewImg("./resources/wall.png")
-	if err != nil {
-		fmt.Printf("strop: %s\n", err.Error())
-		return
-	}
+	// r, err := NewImg("./resources/wall.png")
+	// if err != nil {
+	// 	fmt.Printf("strop: %s\n", err.Error())
+	// 	return
+	// }
 
-	tid := NewTexture(r)
-	_ = r
-
+	// tid := NewTexture(r)
+	// _ = r
 
 	// time
 	var lastFrame float64
 
 	// model
-	const rotationSpeed = 1.5
+	const rotationSpeed = 1.25
 	const moveSpeed = 0.05
-	angle := mgl.Vec3{0, -90, 0}
-	pos := mgl.Vec3{}
+	angle :=  ogm.Vector{0, -90, 0}
+	pos := ogm.Vector{}
+	autoRotate := ogm.Vector{}
 
 	for !window.ShouldClose() && !loopStatus {
 		t := time.Now() // used for fps cap
@@ -136,12 +136,15 @@ func main() {
 		shader.Use()
 
 		// compute projection
-		projMat := mgl.Perspective(mgl.DegToRad(float32(fov)), wWidth/wHeight, 0.1, 100)
+		projMat := mgl.Perspective(ogm.Rad(float32(fov)), wWidth/wHeight, 0.1, 100)
+
+		// compute autorotation
+		angle.Add(autoRotate)
 
 		// compute model matrice
-		rx := mgl.HomogRotate3DX(Rad(angle.X()))
-		ry := mgl.HomogRotate3DY(Rad(angle.Y()))
-		rz := mgl.HomogRotate3DZ(Rad(angle.Z()))
+		rx := mgl.HomogRotate3DX(ogm.Rad(angle.X()))
+		ry := mgl.HomogRotate3DY(ogm.Rad(angle.Y()))
+		rz := mgl.HomogRotate3DZ(ogm.Rad(angle.Z()))
 		tr := mgl.Translate3D(pos.X(), pos.Y(), pos.Z())
 		m1 := tr.Mul4(rz.Mul4(ry.Mul4(rx)))
 
@@ -167,15 +170,20 @@ func main() {
 		doKeyPress(glfw.KeyEscape, func() { loopStatus = true })
 		doKeyPress(glfw.KeyQ, func() { loopStatus = true })
 		doKeyPress(glfw.KeyR, func() {
-			angle = mgl.Vec3{0, -90, 0}
-			pos = mgl.Vec3{}
+			angle = ogm.Vector{0, -90, 0}
+			autoRotate = ogm.Vector{}
+			pos = ogm.Vector{}
 		})
 		doKeyPress(glfw.KeyX, func() { angle[0] += rotationSpeed })
 		doKeyPress(glfw.KeyY, func() { angle[1] += rotationSpeed })
 		doKeyPress(glfw.KeyZ, func() { angle[2] += rotationSpeed })
+		doKeyPress(glfw.Key1, func() { autoRotate[0] += rotationSpeed })
+		doKeyPress(glfw.Key2, func() { autoRotate[1] += rotationSpeed })
+		doKeyPress(glfw.Key3, func() { autoRotate[2] += rotationSpeed })
+		doKeyPress(glfw.KeySpace, func() { autoRotate = ogm.Vector{} })
 		doKeyPress(glfw.KeyD, func() { pos[0] += moveSpeed })
 		doKeyPress(glfw.KeyA, func() { pos[0] -= moveSpeed })
-		doKeyPress(glfw.KeySpace, func() { pos[1] += moveSpeed })
+		doKeyPress(glfw.KeyV, func() { pos[1] += moveSpeed })
 		doKeyPress(glfw.KeyC, func() { pos[1] -= moveSpeed })
 		doKeyPress(glfw.KeyS, func() { pos[2] += moveSpeed })
 		doKeyPress(glfw.KeyW, func() { pos[2] -= moveSpeed })

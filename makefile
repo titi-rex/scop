@@ -21,7 +21,7 @@ test: build
 
 run: build
 	@echo $P run $(notdir $(target))
-	@./$(target)
+	@./$(target) ./resources/teapot2.obj
 
 tidy:
 	@echo $P Tidying up!
