@@ -2,8 +2,6 @@ package ogm
 
 import (
 	"math"
-
-	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 const (
@@ -23,15 +21,15 @@ func Deg[T float](r T) T {
 	return r * degrer
 }
 
-func RotateY(d float32) mgl.Mat4 {
-	r := Rad(float64(d))
-	cos := float32(math.Cos(r))
-	sin := float32(math.Sin(r))
+func Sincos(a float32) (float32, float32) {
+	sin64, cos64 := math.Sincos(float64(a))
+	return float32(sin64), float32(cos64)
+}
 
-	return mgl.Mat4{
-		cos, 0, -sin, 0,
-		0, 1, 0, 0,
-		sin, 0, cos, 0,
-		0, 0, 0, 1,
-	}
+func Cos(a float32) float32 {
+	return float32(math.Cos(float64(a)))
+}
+
+func Sin(a float32) float32 {
+	return float32(math.Sin(float64(a)))
 }

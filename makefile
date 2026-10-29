@@ -9,14 +9,14 @@ build:
 	@echo $P building $(notdir $(target))
 	@go build -o $(target) ./internal/
 
-test: build
+test:
 	@echo $P running test
-	@gotestsum \
+	@go tool gotestsum \
 		--format=dots \
 		--junitfile $(junit_report) \
 		-- \
 		-coverprofile $(cover_report) \
-		-race ./...
+		 ./...
 
 
 run: build

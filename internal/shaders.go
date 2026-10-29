@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"scop/internal/ogm/matrice"
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -141,6 +142,19 @@ func (s *Shader) SearchUVAll(names ...string) error {
 	if err != nil {
 		return err
 	}
+
+	return nil
+}
+
+
+// SetUVMat set a UV name to the value from m
+func (s *Shader) SetUVMat(name string, m *matrice.Matrice) error {
+	loc, ok := s.uniLoc[name]
+	if !ok {
+		return ErrLocNotRegister
+	}
+
+	gl.UniformMatrix4fv(loc, 1, false, &m[0])
 
 	return nil
 }

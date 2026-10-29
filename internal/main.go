@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"scop/internal/camera"
 	"scop/internal/ogm"
+	"scop/internal/ogm/matrice"
+	"scop/internal/ogm/vector"
 	"scop/internal/parser"
 	"time"
 
@@ -119,9 +121,9 @@ func main() {
 	// model
 	const rotationSpeed = 1.25
 	const moveSpeed = 0.05
-	angle :=  ogm.Vector{0, -90, 0}
-	pos := ogm.Vector{}
-	autoRotate := ogm.Vector{}
+	angle := vector.Vector{0, -90, 0}
+	pos := vector.Vector{}
+	autoRotate := vector.Vector{}
 
 	for !window.ShouldClose() && !loopStatus {
 		t := time.Now() // used for fps cap
@@ -142,15 +144,21 @@ func main() {
 		angle.Add(autoRotate)
 
 		// compute model matrice
-		rx := mgl.HomogRotate3DX(ogm.Rad(angle.X()))
-		ry := mgl.HomogRotate3DY(ogm.Rad(angle.Y()))
-		rz := mgl.HomogRotate3DZ(ogm.Rad(angle.Z()))
-		tr := mgl.Translate3D(pos.X(), pos.Y(), pos.Z())
-		m1 := tr.Mul4(rz.Mul4(ry.Mul4(rx)))
+		// rx := matrice.NewRotationX(ogm.Rad(angle.X()))
+		// ry := matrice.NewRotationY(ogm.Rad(angle.Y()))
+		// rz := matrice.NewRotationZ(ogm.Rad(angle.Z()))
+		// tr := matrice.NewTranslation(pos.X(), pos.Y(), pos.Z())
+		// m1 := tr.Mul(rz.Mul(ry.Mul(rx)))
+		// _ = m1
+		m1 := matrice.NewIdent()
+		m1.RotateX(ogm.Rad(angle.X())).
+			RotateY(ogm.Rad(angle.Y())).
+			RotateZ(ogm.Rad(angle.Z())).
+			Translate(pos)
 
 		// set matrice
 		err = errors.Join(
-			shader.SetUVMat4(uVarModel, m1),
+			shader.SetUVMat(uVarModel, m1),
 			shader.SetUVMat4(uVarView, cam.View()),
 			shader.SetUVMat4(uVarProjection, projMat),
 		)
@@ -170,9 +178,9 @@ func main() {
 		doKeyPress(glfw.KeyEscape, func() { loopStatus = true })
 		doKeyPress(glfw.KeyQ, func() { loopStatus = true })
 		doKeyPress(glfw.KeyR, func() {
-			angle = ogm.Vector{0, -90, 0}
-			autoRotate = ogm.Vector{}
-			pos = ogm.Vector{}
+			angle = vector.Vector{0, -90, 0}
+			autoRotate = vector.Vector{}
+			pos = vector.Vector{}
 		})
 		doKeyPress(glfw.KeyX, func() { angle[0] += rotationSpeed })
 		doKeyPress(glfw.KeyY, func() { angle[1] += rotationSpeed })
@@ -180,7 +188,7 @@ func main() {
 		doKeyPress(glfw.Key1, func() { autoRotate[0] += rotationSpeed })
 		doKeyPress(glfw.Key2, func() { autoRotate[1] += rotationSpeed })
 		doKeyPress(glfw.Key3, func() { autoRotate[2] += rotationSpeed })
-		doKeyPress(glfw.KeySpace, func() { autoRotate = ogm.Vector{} })
+		doKeyPress(glfw.KeySpace, func() { autoRotate = vector.Vector{} })
 		doKeyPress(glfw.KeyD, func() { pos[0] += moveSpeed })
 		doKeyPress(glfw.KeyA, func() { pos[0] -= moveSpeed })
 		doKeyPress(glfw.KeyV, func() { pos[1] += moveSpeed })
