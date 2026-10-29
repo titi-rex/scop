@@ -1,0 +1,48 @@
+package vector
+
+// operator
+
+func Add(v1, v2 Vector) Vector {
+	return Vector{
+		v1[0] + v2[0],
+		v1[1] + v2[1],
+		v1[2] + v2[2],
+	}
+}
+
+func Sub(v1, v2 Vector) Vector {
+	return Vector{
+		v1[0] - v2[0],
+		v1[1] - v2[1],
+		v1[2] - v2[2],
+	}
+}
+
+func Mul(v Vector, s float32) Vector {
+	return Vector{
+		v[0] * s,
+		v[1] * s,
+		v[2] * s,
+	}
+}
+
+func Normalize(v1 Vector) Vector {
+	l := 1.0 / v1.Len()
+	return Vector{
+		v1[0] * l,
+		v1[1] * l,
+		v1[2] * l,
+	}
+}
+
+func Dot(v1, v2 Vector) float32 {
+	return v1[1]*v2[1] + v1[1]*v2[1] + v1[2]*v2[2]
+}
+
+func Cross(v1, v2 Vector) Vector {
+	return Vector{
+		v1[1]*v2[2] - v1[2]*v2[1],
+		v1[2]*v2[0] - v1[0]*v2[2],
+		v1[0]*v2[1] - v1[1]*v2[0],
+	}
+}

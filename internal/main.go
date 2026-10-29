@@ -25,7 +25,7 @@ const (
 )
 
 var (
-	cam        = camera.NewOrhto(mgl.Vec3{0, 0, 3}, mgl.Vec3{0, 0, 1})
+	cam        = camera.NewOrhto(vector.Vector{0, 0, 3}, vector.Vector{0, 0, 1})
 	loopStatus = false
 	deltaTime  = float32(0)
 )
@@ -121,7 +121,7 @@ func main() {
 	// model
 	const rotationSpeed = 1.25
 	const moveSpeed = 0.05
-	angle := vector.Vector{0, -90, 0}
+	angle := vector.Vector{0, 0, 0}
 	pos := vector.Vector{}
 	autoRotate := vector.Vector{}
 
@@ -138,29 +138,25 @@ func main() {
 		shader.Use()
 
 		// compute projection
-		projMat := mgl.Perspective(ogm.Rad(float32(fov)), wWidth/wHeight, 0.1, 100)
+		projMat := matrice.NewPerspective(ogm.Rad(float32(fov)), wWidth/wHeight, 0.1, 100)
 
 		// compute autorotation
 		angle.Add(autoRotate)
 
 		// compute model matrice
-		// rx := matrice.NewRotationX(ogm.Rad(angle.X()))
-		// ry := matrice.NewRotationY(ogm.Rad(angle.Y()))
-		// rz := matrice.NewRotationZ(ogm.Rad(angle.Z()))
-		// tr := matrice.NewTranslation(pos.X(), pos.Y(), pos.Z())
-		// m1 := tr.Mul(rz.Mul(ry.Mul(rx)))
-		// _ = m1
-		m1 := matrice.NewIdent()
-		m1.RotateX(ogm.Rad(angle.X())).
-			RotateY(ogm.Rad(angle.Y())).
+
+		m0 := matrice.NewIdent().
+			Translate(pos).
 			RotateZ(ogm.Rad(angle.Z())).
-			Translate(pos)
+			RotateY(ogm.Rad(angle.Y())).
+			RotateX(ogm.Rad(angle.X()))
+
 
 		// set matrice
 		err = errors.Join(
-			shader.SetUVMat(uVarModel, m1),
+			shader.SetUVMat(uVarModel, m0),
 			shader.SetUVMat4(uVarView, cam.View()),
-			shader.SetUVMat4(uVarProjection, projMat),
+			shader.SetUVMat(uVarProjection, projMat),
 		)
 		if err != nil {
 			log.Println("bad code!", err.Error())
@@ -178,7 +174,7 @@ func main() {
 		doKeyPress(glfw.KeyEscape, func() { loopStatus = true })
 		doKeyPress(glfw.KeyQ, func() { loopStatus = true })
 		doKeyPress(glfw.KeyR, func() {
-			angle = vector.Vector{0, -90, 0}
+			angle = vector.Vector{}
 			autoRotate = vector.Vector{}
 			pos = vector.Vector{}
 		})

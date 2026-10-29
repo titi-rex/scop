@@ -1,51 +1,52 @@
 package matrice
 
-import "scop/internal/ogm/vector"
+import (
+	"bytes"
+	"fmt"
+	"text/tabwriter"
+)
 
 type Matrice [4 * 4]float32
 
+// Add perform matrice addition
 func (m *Matrice) Add(o *Matrice) *Matrice {
 	*m = *Add(m, o)
 
 	return m
 }
 
+// Mul perform matrice substraction
 func (m *Matrice) Mul(o *Matrice) *Matrice {
 	*m = *Mul(m, o)
 
 	return m
 }
 
-func (m *Matrice) RotateX(angle float32) *Matrice {
-	rot := NewRotationX(angle)
+// Scale perform matrice substraction
+func (m *Matrice) Scale(s float32) *Matrice {
+	*m = *Scale(m, s)
 
-	return m.Mul(rot)
+	return m
 }
 
-func (m *Matrice) RotateY(angle float32) *Matrice {
-	rot := NewRotationY(angle)
+type v4 [4]float32
 
-	return m.Mul(rot)
+// row return a vector representing the corresponding row (staring from 0)
+func (m Matrice) row(id int) v4 {
+	return v4{m[id+0], m[id+4], m[id+8], m[id+12]}
 }
 
-func (m *Matrice) RotateZ(angle float32) *Matrice {
-	rot := NewRotationZ(angle)
+// Pretty print a matrice
+func (m Matrice) String() string {
+	buf := new(bytes.Buffer)
+	w := tabwriter.NewWriter(buf, 4, 4, 1, ' ', tabwriter.AlignRight)
+	for i := range 4 {
+		for _, col := range m.row(i) {
+			_, _ = fmt.Fprintf(w, "%f\t", col)
+		}
 
-	return m.Mul(rot)
+		_, _ = fmt.Fprintln(w, "")
+	}
+	_ = w.Flush()
+	return buf.String()
 }
-func (m *Matrice) RotateXYZ(v vector.Vector) *Matrice {
-	return m.RotateX(v.X()).RotateY(v.Y()).RotateZ(v.Z())
-}
-
-func (m *Matrice) Translate(v vector.Vector) *Matrice {
-	tr := NewTranslation(v.X(), v.Y(), v.Z())
-
-	return m.Mul(tr)
-}
-
-// func
-// Rotation
-// Trans
-// Perspective
-// LookAt
-//

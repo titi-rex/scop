@@ -1,7 +1,8 @@
 package camera
 
 import (
-	mgl "github.com/go-gl/mathgl/mgl32"
+	"scop/internal/ogm/matrice"
+	"scop/internal/ogm/vector"
 )
 
 type orthoCamera struct {
@@ -11,24 +12,24 @@ type orthoCamera struct {
 var _ Camera = (*orthoCamera)(nil)
 
 // NewOrhto create a camera moving only on the world orientation
-func NewOrhto(pos, center mgl.Vec3) orthoCamera {
+func NewOrhto(pos,center vector.Vector) orthoCamera {
 	return orthoCamera{
 		core: core{
 			eye:    pos,
 			center: center,
-			up:     mgl.Vec3{0, 1, 0},
+			up:     vector.Vector{0, 1, 0},
 			speed:  2.5,
 		},
 	}
 }
 
 // SetCenter implements [Camera].
-func (c *orthoCamera) SetCenter(center mgl.Vec3) {
+func (c *orthoCamera) SetCenter(center vector.Vector) {
 	c.core.center = center
 }
 
 // View implements [Camera].
-func (c *orthoCamera) View() mgl.Mat4 {
+func (c *orthoCamera) View() matrice.Matrice {
 	return c.core.view()
 }
 

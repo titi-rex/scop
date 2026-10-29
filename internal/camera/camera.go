@@ -1,12 +1,15 @@
 package camera
 
-import mgl "github.com/go-gl/mathgl/mgl32"
+import (
+	"scop/internal/ogm/matrice"
+	"scop/internal/ogm/vector"
+)
 
 type Camera interface {
 	// Return the view matrice.
-	View() mgl.Mat4
+	View() matrice.Matrice
 	// Set the center (direction of look)
-	SetCenter(center mgl.Vec3)
+	SetCenter(center vector.Vector)
 	// Move the camera in a direction
 	Move(d Direction, deltaTime float32)
 }

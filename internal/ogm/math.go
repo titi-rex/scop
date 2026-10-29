@@ -33,3 +33,11 @@ func Cos(a float32) float32 {
 func Sin(a float32) float32 {
 	return float32(math.Sin(float64(a)))
 }
+
+func Tan(a float32) float32 {
+	return float32(math.Tan(float64(a)))
+}
+
+func Sqrt(f float32) float32 {
+	return float32(math.Sqrt(float64(f)))
+}

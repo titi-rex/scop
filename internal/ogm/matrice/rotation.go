@@ -59,3 +59,40 @@ func NewRotation(angle float32, axis vector.Vector) *Matrice {
 		0, 0, 0, 1,
 	}
 }
+
+// RotateX rotate the matrice by angle around the X-axis.
+func (m *Matrice) RotateX(angle float32) *Matrice {
+	rot := NewRotationX(angle)
+
+	return m.Mul(rot)
+}
+
+// RotateY rotate the matrice by angle around the Y-axis.
+func (m *Matrice) RotateY(angle float32) *Matrice {
+	rot := NewRotationY(angle)
+
+	return m.Mul(rot)
+}
+
+// RotateZ rotate the matrice by angle around the Z-axis.
+func (m *Matrice) RotateZ(angle float32) *Matrice {
+	rot := NewRotationZ(angle)
+
+	return m.Mul(rot)
+}
+
+// RotateXYZ rotate the matrice by each angles around XYZ.
+// (apply in order: Z -> Y -> X)
+func (m *Matrice) RotateXYZ(angles vector.Vector) *Matrice {
+	return m.
+		RotateZ(angles.Z()).
+		RotateY(angles.Y()).
+		RotateX(angles.X())
+}
+
+// RotateY rotate the matrice by angle around axis.
+func (m *Matrice) Rotate(angle float32, axis vector.Vector) *Matrice {
+	rot := NewRotation(angle, axis)
+
+	return m.Mul(rot)
+}
