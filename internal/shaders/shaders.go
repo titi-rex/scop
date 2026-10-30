@@ -156,3 +156,14 @@ func (s *Shader) SetUniVarMatrice(name string, m *matrice.Matrice) error {
 
 	return nil
 }
+
+func (s *Shader) SetUniVarUInt(name string, v uint32) error {
+	loc, ok := s.uniLoc[name]
+	if !ok {
+		return ErrLocNotRegister
+	}
+
+	gl.Uniform1ui(loc, v)
+
+	return nil
+}

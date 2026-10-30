@@ -12,6 +12,7 @@ import (
 	"scop/internal/ogm/vector"
 	"scop/internal/parser"
 	"scop/internal/shaders"
+	"scop/internal/texture"
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -29,7 +30,6 @@ var (
 	loopStatus = false
 	deltaTime  = float32(0)
 )
-
 
 func main() {
 	runtime.LockOSThread()
@@ -96,19 +96,25 @@ func main() {
 	// wireframe mode
 	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	// load image
+	r, err := texture.NewImg("./resources/square.png")
+	if err != nil {
+		fmt.Printf("stop: texture: %s\n", err.Error())
+		return
+	}
 
-	// r, err := NewImg("./resources/wall.png")
-	// if err != nil {
-	// 	fmt.Printf("strop: %s\n", err.Error())
-	// 	return
-	// }
+	// create texture
+	tid := texture.NewTexture(r)
+	_ = tid
 
-	// tid := NewTexture(r)
-	// _ = r
+	// set texture univar
+	err = shader.SetUniVarUInt(shaders.UniVarTexture1, 0)
+	if err != nil {
+		fmt.Printf("stop: texture: %s\n", err.Error())
+		return
+	}
+
+
 
 	// time
 	var lastFrame float64
@@ -146,7 +152,6 @@ func main() {
 			RotateY(ogm.Rad(angle.Y())).
 			RotateX(ogm.Rad(angle.X()))
 
-
 		// set matrice
 		err = errors.Join(
 			shader.SetUniVarMatrice(shaders.UniVarModel, m0),
@@ -159,6 +164,8 @@ func main() {
 		}
 
 		// draw
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.BindTexture(gl.TEXTURE_2D, tid)
 		gl.BindVertexArray(vao)
 		gl.DrawElements(gl.TRIANGLES, obj.IndicesCount, gl.UNSIGNED_INT, nil)
 		gl.BindVertexArray(0)

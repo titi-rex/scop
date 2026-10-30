@@ -10,6 +10,8 @@ const (
 	UniVarModel      = "model"
 	UniVarView       = "view"
 	UniVarProjection = "projection"
+
+	UniVarTexture1 = "texture1"
 )
 
 func InitShader() (Shader, error) {
@@ -36,6 +38,7 @@ func InitShader() (Shader, error) {
 		UniVarModel,
 		UniVarView,
 		UniVarProjection,
+		UniVarTexture1,
 	)
 	if err != nil {
 		return Shader{}, err
