@@ -11,19 +11,19 @@ func TestAdd(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		m1       *Matrice
-		m2       *Matrice
-		expected *Matrice
+		m1       Matrice
+		m2       Matrice
+		expected Matrice
 	}{
 		"1. add identity": {
-			m1: &Matrice{
+			m1: Matrice{
 				1, 1, 1, 0,
 				0, 0, 0, 1,
 				0, 0, 0, 0,
 				1, 0, 0, 1,
 			},
-			m2: NewIdent(),
-			expected: &Matrice{
+			m2: *NewIdent(),
+			expected: Matrice{
 				2, 1, 1, 0,
 				0, 1, 0, 1,
 				0, 0, 1, 0,
@@ -31,19 +31,19 @@ func TestAdd(t *testing.T) {
 			},
 		},
 		"2. add Zero": {
-			m1: NewIdent(),
-			m2: NewZero(),
-			expected:NewIdent(),
+			m1: *NewIdent(),
+			m2: *NewZero(),
+			expected:*NewIdent(),
 		},
 		"2. add negative": {
-			m1: NewIdent(),
-			m2: &Matrice{
+			m1: *NewIdent(),
+			m2: Matrice{
 				-1, 1, -1, 0,
 				0, -1, 0, 1,
 				0, 0, 1, 0,
 				-1, -3, 0, 2,
 			},
-			expected: &Matrice{
+			expected: Matrice{
 				0, 1, -1, 0,
 				0, 0, 0, 1,
 				0, 0, 2, 0,
@@ -70,21 +70,21 @@ func TestSelfAdd(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		m1       *Matrice
-		m2       *Matrice
-		m3       *Matrice
-		expected *Matrice
+		m1       Matrice
+		m2       Matrice
+		m3       Matrice
+		expected Matrice
 	}{
 		"1. add identity": {
-			m1: &Matrice{
+			m1: Matrice{
 				1, 1, 1, 0,
 				0, 0, 0, 1,
 				0, 0, 0, 0,
 				1, 0, 0, 1,
 			},
-			m2: NewIdent(),
-			m3: NewIdent(),
-			expected: &Matrice{
+			m2: *NewIdent(),
+			m3: *NewIdent(),
+			expected: Matrice{
 				3, 1, 1, 0,
 				0, 2, 0, 1,
 				0, 0, 2, 0,
@@ -92,21 +92,21 @@ func TestSelfAdd(t *testing.T) {
 			},
 		},
 		"2. add Zero": {
-			m1: NewIdent(),
-			m2: NewZero(),
-			m3: NewZero(),
-			expected:NewIdent(),
+			m1: *NewIdent(),
+			m2: *NewZero(),
+			m3: *NewZero(),
+			expected:*NewIdent(),
 		},
 		"2. add negative": {
-			m1: NewIdent(),
-			m2: &Matrice{
+			m1: *NewIdent(),
+			m2: Matrice{
 				-1, 1, -1, 0,
 				0, -1, 0, 1,
 				0, 0, 1, 0,
 				-1, -3, 0, 2,
 			},
-			m3: NewIdent(),
-			expected: &Matrice{
+			m3: *NewIdent(),
+			expected: Matrice{
 				1, 1, -1, 0,
 				0, 1, 0, 1,
 				0, 0, 3, 0,

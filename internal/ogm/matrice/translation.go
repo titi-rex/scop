@@ -21,5 +21,5 @@ func NewTranslation(x, y, z float32) *Matrice {
 func (m *Matrice) Translate(vec vector.Vector) *Matrice {
 	tr := NewTranslation(vec.X(), vec.Y(), vec.Z())
 
-	return m.Mul(tr)
+	return m.Mul(*tr)
 }

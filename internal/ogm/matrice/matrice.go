@@ -13,25 +13,16 @@ func (m *Matrice) Data() *float32 {
 	return &m[0]
 }
 
-// Add perform matrice addition
-func (m *Matrice) Add(o *Matrice) *Matrice {
-	*m = *Add(m, o)
-
-	return m
-}
-
-// Mul perform matrice substraction
-func (m *Matrice) Mul(o *Matrice) *Matrice {
-	*m = *Mul(m, o)
-
-	return m
-}
-
-// Scale perform matrice substraction
-func (m *Matrice) Scale(s float32) *Matrice {
-	*m = *Scale(m, s)
-
-	return m
+// Det return the matrice determinant
+func (m Matrice) Det() float32 {
+	return m[0]*m[5]*m[10]*m[15] - m[0]*m[5]*m[11]*m[14] - m[0]*m[6]*m[9]*m[15] +
+		m[0]*m[6]*m[11]*m[13] + m[0]*m[7]*m[9]*m[14] - m[0]*m[7]*m[10]*m[13] -
+		m[1]*m[4]*m[10]*m[15] + m[1]*m[4]*m[11]*m[14] + m[1]*m[6]*m[8]*m[15] -
+		m[1]*m[6]*m[11]*m[12] - m[1]*m[7]*m[8]*m[14] + m[1]*m[7]*m[10]*m[12] +
+		m[2]*m[4]*m[9]*m[15] - m[2]*m[4]*m[11]*m[13] - m[2]*m[5]*m[8]*m[15] +
+		m[2]*m[5]*m[11]*m[12] + m[2]*m[7]*m[8]*m[13] - m[2]*m[7]*m[9]*m[12] -
+		m[3]*m[4]*m[9]*m[14] + m[3]*m[4]*m[10]*m[13] + m[3]*m[5]*m[8]*m[14] -
+		m[3]*m[5]*m[10]*m[12] - m[3]*m[6]*m[8]*m[13] + m[3]*m[6]*m[9]*m[12]
 }
 
 type v4 [4]float32

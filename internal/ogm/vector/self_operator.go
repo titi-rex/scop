@@ -33,3 +33,21 @@ func (v *Vector) Normalize() *Vector {
 
 	return v
 }
+
+func (v *Vector) Abs() *Vector {
+	*v = Abs(*v)
+
+	return v
+}
+
+func (v *Vector) Clamp0() *Vector {
+	*v = Clamp0(*v)
+
+	return v
+}
+
+func (v *Vector) DivVec(o Vector) *Vector {
+	*v = DivVec(*v, o)
+
+	return v
+}

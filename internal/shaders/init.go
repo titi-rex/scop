@@ -7,11 +7,12 @@ import (
 )
 
 const (
-	UniVarModel      = "model"
-	UniVarView       = "view"
-	UniVarProjection = "projection"
+	UniVarModel      = "u_model"
+	UniVarView       = "u_view"
+	UniVarProjection = "u_projection"
 
-	UniVarTexture1 = "texture1"
+	UniVarMode = "u_mode"
+	UniVarTexture1 = "u_texture1"
 )
 
 func InitShader() (Shader, error) {
@@ -38,6 +39,7 @@ func InitShader() (Shader, error) {
 		UniVarModel,
 		UniVarView,
 		UniVarProjection,
+		UniVarMode,
 		UniVarTexture1,
 	)
 	if err != nil {

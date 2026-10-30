@@ -26,9 +26,13 @@ const (
 )
 
 var (
-	cam        = camera.NewOrhto(vector.Vector{0, 0, 3}, vector.Vector{0, 0, 1})
-	loopStatus = false
-	deltaTime  = float32(0)
+	cam             = camera.NewOrhto(vector.Vector{0, 0, 3}, vector.Vector{0, 0, 1})
+	loopStatus      = false
+	deltaTime       = float32(0)
+	textureModeName = map[uint32]string{
+		0: "grayscale",
+		1: "wall",
+	}
 )
 
 func main() {
@@ -89,32 +93,39 @@ func main() {
 	}()
 
 	// vao.2
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
+	// attribute for vertex
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
 	gl.EnableVertexAttribArray(0)
-	gl.BindVertexArray(0)
+
+	// attributes for texture
+	gl.VertexAttribPointerWithOffset(1, 2, gl.FLOAT, false, 5*4, 3*4)
+	gl.EnableVertexAttribArray(1)
+	UnbindVAO()
 
 	// wireframe mode
-	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 
 	// load image
-	r, err := texture.NewImg("./resources/square.png")
+	r, err := texture.NewImg("./resources/wall.jpg")
 	if err != nil {
 		fmt.Printf("stop: texture: %s\n", err.Error())
 		return
 	}
 
-	// create texture
+	// texture
+	textureMode := uint32(1)
+	textureGraceTime := time.Now()
 	tid := texture.NewTexture(r)
-	_ = tid
 
 	// set texture univar
-	err = shader.SetUniVarUInt(shaders.UniVarTexture1, 0)
+	err = errors.Join(
+		shader.SetUniVarUInt(shaders.UniVarTexture1, 0),
+		shader.SetUniVarUInt(shaders.UniVarMode, textureMode),
+	)
 	if err != nil {
-		fmt.Printf("stop: texture: %s\n", err.Error())
+		fmt.Printf("stop: univar textures : %s\n", err.Error())
 		return
 	}
-
-
 
 	// time
 	var lastFrame float64
@@ -139,7 +150,7 @@ func main() {
 		shader.Use()
 
 		// compute projection
-		projMat := matrice.NewPerspective(ogm.Rad(float32(fov)), wWidth/wHeight, 0.1, 100)
+		projMat := matrice.NewPerspective(ogm.Rad(float32(fov)), wWidth/wHeight, 0.1, 10)
 
 		// compute autorotation
 		angle.Add(autoRotate)
@@ -152,23 +163,20 @@ func main() {
 			RotateY(ogm.Rad(angle.Y())).
 			RotateX(ogm.Rad(angle.X()))
 
-		// set matrice
-		err = errors.Join(
-			shader.SetUniVarMatrice(shaders.UniVarModel, m0),
-			shader.SetUniVarMatrice(shaders.UniVarView, cam.View()),
-			shader.SetUniVarMatrice(shaders.UniVarProjection, projMat),
-		)
-		if err != nil {
-			log.Println("bad code!", err.Error())
-			return
-		}
+			// set matrice
+		_ = shader.SetUniVarMatrice(shaders.UniVarModel, m0)
+		_ = shader.SetUniVarMatrice(shaders.UniVarView, cam.View())
+		_ = shader.SetUniVarMatrice(shaders.UniVarProjection, projMat)
+		_ = shader.SetUniVarUInt(shaders.UniVarMode, textureMode)
 
 		// draw
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, tid)
+		if textureMode != 0 {
+			gl.ActiveTexture(gl.TEXTURE0)
+			gl.BindTexture(gl.TEXTURE_2D, tid)
+		}
 		gl.BindVertexArray(vao)
 		gl.DrawElements(gl.TRIANGLES, obj.IndicesCount, gl.UNSIGNED_INT, nil)
-		gl.BindVertexArray(0)
+		UnbindVAO()
 		window.SwapBuffers()
 
 		// handle event
@@ -180,9 +188,12 @@ func main() {
 			autoRotate = vector.Vector{}
 			pos = vector.Vector{}
 		})
-		doKeyPress(glfw.KeyX, func() { angle[0] += rotationSpeed })
-		doKeyPress(glfw.KeyY, func() { angle[1] += rotationSpeed })
+		doKeyPress(glfw.KeyUp, func() { angle[0] += rotationSpeed })
+		doKeyPress(glfw.KeyDown, func() { angle[0] -= rotationSpeed })
+		doKeyPress(glfw.KeyRight, func() { angle[1] += rotationSpeed })
+		doKeyPress(glfw.KeyLeft, func() { angle[1] -= rotationSpeed })
 		doKeyPress(glfw.KeyZ, func() { angle[2] += rotationSpeed })
+		doKeyPress(glfw.KeyX, func() { angle[2] -= rotationSpeed })
 		doKeyPress(glfw.Key1, func() { autoRotate[0] += rotationSpeed })
 		doKeyPress(glfw.Key2, func() { autoRotate[1] += rotationSpeed })
 		doKeyPress(glfw.Key3, func() { autoRotate[2] += rotationSpeed })
@@ -193,6 +204,19 @@ func main() {
 		doKeyPress(glfw.KeyC, func() { pos[1] -= moveSpeed })
 		doKeyPress(glfw.KeyS, func() { pos[2] += moveSpeed })
 		doKeyPress(glfw.KeyW, func() { pos[2] -= moveSpeed })
+		doKeyPress(glfw.KeyT, func() {
+			if time.Since(textureGraceTime) < 500*time.Millisecond {
+				return
+			}
+
+			textureMode = (textureMode + 1) % 2
+			log.Printf("set texture mode to %s (%d)\n", textureModeName[textureMode], textureMode)
+			err = shader.SetUniVarUInt(shaders.UniVarMode, textureMode)
+			if err != nil {
+				log.Println("aie aie aei...", err)
+			}
+			textureGraceTime = time.Now()
+		})
 
 		// cap fps
 		time.Sleep(time.Second/time.Duration(fps) - time.Since(t))

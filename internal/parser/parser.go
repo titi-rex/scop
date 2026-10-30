@@ -7,11 +7,11 @@ import (
 	"log"
 	"math"
 	"os"
+	"scop/internal/ogm/matrice"
+	"scop/internal/ogm/vector"
 
 	"strconv"
 	"strings"
-
-	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 type token string
@@ -24,18 +24,20 @@ const (
 	face    token = "f"
 )
 
+// Object is the struct holding the vertices data
 type Object struct {
 	Name         string
 	Vertices     []float32
 	Indices      []uint32
 	IndicesCount int32
-	Matrice      mgl.Mat4
+	Matrice      matrice.Matrice
 
 	tmpIndices []int32
-	max        []float64
-	min        []float64
+	max        vector.Vector
+	min        vector.Vector
 }
 
+// NewObj load an object from an .obj file
 func NewObj(path string) (Object, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -46,9 +48,9 @@ func NewObj(path string) (Object, error) {
 	log.Println("Load obj from", path)
 
 	obj := Object{
-		Matrice: mgl.Ident4(),
-		max:     []float64{-math.MaxFloat64, -math.MaxFloat64, -math.MaxFloat64},
-		min:     []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+		Matrice: *matrice.NewIdent(),
+		max:     vector.Vector{-math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32},
+		min:     vector.Vector{math.MaxFloat32, math.MaxFloat32, math.MaxFloat32},
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -69,7 +71,7 @@ func NewObj(path string) (Object, error) {
 				return Object{}, err
 			}
 		default:
-			log.Println("unknow line id", words[0])
+			log.Println("ignored line id", words[0])
 		}
 	}
 
@@ -78,15 +80,21 @@ func NewObj(path string) (Object, error) {
 		return Object{}, err
 	}
 
-	// fmt.Printf("vert bef: %v\n", obj.Vertices)
-	obj.normalize()
-	// fmt.Printf("vert aft: %v\n", obj.Vertices)
 	obj.convertIndices()
+	err = obj.normalize()
+	if err != nil {
+		return Object{}, err
+	}
 	obj.IndicesCount = int32(len(obj.Indices))
 
 	return obj, nil
 }
 
+// loadVertice parse a vertice line, it expect 3 points.
+//
+// example:
+//
+//	v 1.21513 2.213553 0.5654654
 func (o *Object) loadVertice(raw []string) error {
 
 	x, errX := strconv.ParseFloat(raw[0], 32)
@@ -101,14 +109,14 @@ func (o *Object) loadVertice(raw []string) error {
 		log.Println("ignored garbage:", raw[3:])
 	}
 
-	o.max[0] = max(x, o.max[0])
-	o.min[0] = min(x, o.min[0])
+	o.max[0] = max(float32(x), o.max[0])
+	o.min[0] = min(float32(x), o.min[0])
 
-	o.max[1] = max(y, o.max[1])
-	o.min[1] = min(y, o.min[1])
+	o.max[1] = max(float32(y), o.max[1])
+	o.min[1] = min(float32(y), o.min[1])
 
-	o.max[2] = max(z, o.max[2])
-	o.min[2] = min(z, o.min[2])
+	o.max[2] = max(float32(z), o.max[2])
+	o.min[2] = min(float32(z), o.min[2])
 
 	o.Vertices = append(o.Vertices, float32(x))
 	o.Vertices = append(o.Vertices, float32(y))
@@ -117,6 +125,12 @@ func (o *Object) loadVertice(raw []string) error {
 	return nil
 }
 
+// loadFace parse a face line with an arbitrary number of vertices referred
+// and make a triangle fan with. [https://en.wikipedia.org/wiki/Triangle_fan]
+//
+// example:
+//
+//	f 1 5 3 14
 func (o *Object) loadFace(raw []string) error {
 	var values []int32
 	for _, s := range raw {
@@ -130,7 +144,7 @@ func (o *Object) loadFace(raw []string) error {
 		values = append(values, int32(v))
 	}
 
-	// triangle truc
+	// triangle fan
 	var n int32
 	for i := 1; i+1 < len(raw); i += 1 {
 		o.tmpIndices = append(o.tmpIndices, int32(values[0]))
@@ -142,38 +156,72 @@ func (o *Object) loadFace(raw []string) error {
 	return nil
 }
 
-func (o *Object) normalize() {
-	// log.Println("maxs:", o.max)
-	// log.Println("mins:", o.min)
+// normalize center and scale the object.
+// It also apply a planar projection to compute texture coordinates.
+func (o *Object) normalize() error {
+	const targetScale = float32(1)
 
-	// On centre et met le modele a l'echelle
-	centerX := float32((o.min[0] + o.max[0]) / 2)
-	centerY := float32((o.min[1] + o.max[1]) / 2)
-	centerZ := float32((o.min[2] + o.max[2]) / 2)
+	center := vector.Add(o.min, o.max)
+	center.Mul(0.5)
 
-	sizeX := o.max[0] - o.min[0]
-	sizeY := o.max[1] - o.min[1]
-	sizeZ := o.max[2] - o.min[2]
-
-	maxExtent := max(sizeX, sizeY, sizeZ)
-
-	// scaleFactor := (normalize && maxExtent > 0) ? (targetScale / maxExtent) : 1;
-	log.Println("max extend", maxExtent)
-
-	targetScale := float64(1)
-	scaleFactor := float32(1)
-	if maxExtent > 0 {
-		scaleFactor = float32(targetScale / maxExtent)
+	size := vector.Sub(o.max, o.min)
+	if size.Norm() == 0 {
+		return errors.New("all points at same position")
 	}
 
-	vertices := make([]float32, len(o.Vertices))
-	for i := 0; i < len(o.Vertices); i += 3 {
-		vertices[i] = (o.Vertices[i] - centerX) * scaleFactor
-		vertices[i+1] = (o.Vertices[i+1] - centerY) * scaleFactor
-		vertices[i+2] = (o.Vertices[i+2] - centerZ) * scaleFactor
+	greaterSide := max(size.X(), size.Y(), size.Z())
+	scaleFactor := float32(targetScale / greaterSide)
+
+	var vertices []float32
+	var indices []uint32
+	currentIdx := uint32(0)
+	for i := 0; i < len(o.Indices); i += 3 {
+		idx0 := o.Indices[i]
+		idx1 := o.Indices[i+1]
+		idx2 := o.Indices[i+2]
+
+		v0 := vector.LoadFromSlice(o.Vertices, idx0*3)
+		v1 := vector.LoadFromSlice(o.Vertices, idx1*3)
+		v2 := vector.LoadFromSlice(o.Vertices, idx2*3)
+
+		a := vector.Sub(v1, v0)
+		b := vector.Sub(v2, v0)
+		n := vector.Cross(a, b)
+		n.Normalize().Abs()
+
+		for _, vec := range []vector.Vector{v0, v1, v2} {
+			vec.Sub(center).Mul(scaleFactor)
+			u, v := ProjTexture(vec, o.min, size, n)
+
+			vertices = append(vertices, []float32{vec.X(), vec.Y(), vec.Z(), u, v}...)
+			indices = append(indices, currentIdx)
+			currentIdx++
+		}
 	}
 
 	o.Vertices = vertices
+	o.Indices = indices
+	return nil
+}
+
+// ProjTexture project texture onto the nearer plan.
+func ProjTexture(vertice, min, size, normal vector.Vector) (float32, float32) {
+	duv := vector.Sub(vertice, min)
+	uv := vector.Zip(duv, size, func(e1, e2 float32) float32 {
+		if e2 < 0 {
+			return 0
+		}
+		return e1 / e2
+	})
+
+	// choose proj with the greater normal axis
+	if normal.Z() >= normal.X() && normal.Z() >= normal.Y() { // plan XY
+		return uv.X(), uv.Y()
+	} else if normal.X() >= normal.Y() && normal.X() >= normal.Z() { // plan YZ
+		return uv.Z(), uv.Y()
+	} else { // plan XZ
+		return uv.X(), uv.Z()
+	}
 }
 
 // convert indices from 1..21, -1, -4,.. to >=0 indices
@@ -189,3 +237,10 @@ func (o *Object) convertIndices() {
 		o.Indices = append(o.Indices, uint32(v))
 	}
 }
+
+// func UV(x, min, size float32) float32 {
+// 	if size < 0 {
+// 		return 0
+// 	}
+// 	return (x - min) / size
+// }
