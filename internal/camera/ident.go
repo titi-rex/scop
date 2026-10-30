@@ -1,26 +1,27 @@
 package camera
 
 import (
-	mgl "github.com/go-gl/mathgl/mgl32"
+	"scop/internal/ogm/matrice"
+	"scop/internal/ogm/vector"
 )
 
 type lockedCamera struct {
-	matrice mgl.Mat4
+	matrice matrice.Matrice
 }
 
 var _ Camera = (*lockedCamera)(nil)
 
 func NewLocked() lockedCamera {
 	return lockedCamera{
-		matrice: mgl.Ident4(),
+		matrice: *matrice.NewIdent(),
 	}
 }
 
 // SetCenter implements [Camera].
-func (c *lockedCamera) SetCenter(_ mgl.Vec3) {}
+func (c *lockedCamera) SetCenter(_ vector.Vector) {}
 
 // View implements [Camera].
-func (c *lockedCamera) View() mgl.Mat4 { return c.matrice }
+func (c *lockedCamera) View() *matrice.Matrice { return &c.matrice }
 
 // Move implements [Camera].
 func (c *lockedCamera) Move(_ Direction, _ float32) {}

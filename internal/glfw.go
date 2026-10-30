@@ -6,9 +6,9 @@ import (
 	"math"
 	"scop/internal/camera"
 	"scop/internal/ogm"
+	"scop/internal/ogm/vector"
 
 	"github.com/go-gl/glfw/v3.4/glfw"
-	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 const (
@@ -94,12 +94,12 @@ func CursorPosHandler(w *glfw.Window, xpos, ypos float64) {
 		pitch = -89.0
 	}
 
-	front := mgl.Vec3{
+	front := vector.Vector{
 		float32(math.Cos(ogm.Rad(yaw)) * math.Cos(ogm.Rad(pitch))),
 		float32(math.Sin(ogm.Rad(pitch))),
 		float32(math.Sin(ogm.Rad(yaw)) * math.Cos(ogm.Rad(pitch))),
 	}
-	cam.SetCenter(front.Normalize())
+	cam.SetCenter(vector.Normalize(front))
 }
 
 func ScrollHandler(w *glfw.Window, xoffset, yoffset float64) {

@@ -6,35 +6,40 @@ import (
 )
 
 type core struct {
-	eye    *vector.Vector
-	center *vector.Vector
-	up     *vector.Vector
+	eye    vector.Vector
+	center vector.Vector
+	up     vector.Vector
 
 	speed float32
 }
 
-func (c *core) view() matrice.Matrice {
-	return matrice.LookAt(*c.eye, *c.eye.Sub(*c.center), *c.up)
+func (c *core) view() *matrice.Matrice {
+	return matrice.LookAt(c.eye, vector.Sub(c.eye, c.center), c.up)
 }
 
 // xPlus increase the core X position
 func (c *core) xPlus(velocity float32) {
-	c.eye.Sub(*c.center.Cross(*c.up).Normalize().Mul(velocity))
+	// c.eye.Sub(*c.center.Cross(c.up).Normalize().Mul(velocity))
+	v := vector.Cross(c.center,c.up)
+	v.Normalize().Mul(velocity)
+	c.eye.Sub(v)
 }
 
 // xMinus decrease the core X position
 func (c *core) xMinus(velocity float32) {
-	c.eye.Add(*c.center.Cross(*c.up).Normalize().Mul(velocity))
+	v := vector.Cross(c.center,c.up)
+	v.Normalize().Mul(velocity)
+	c.eye.Add(v)
 }
 
 // zPlus increase the core Z position
 func (c *core) zPlus(velocity float32) {
-	c.eye.Add(*c.center.Mul(velocity))
+	c.eye.Add(vector.Mul(c.center, velocity))
 }
 
 // zMinus decrease the core Z position
 func (c *core) zMinus(velocity float32) {
-	c.eye.Sub(*c.center.Mul(velocity))
+	c.eye.Sub(vector.Mul(c.center, velocity))
 }
 
 // xOrthoPlus increase the core Y position

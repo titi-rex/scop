@@ -8,6 +8,11 @@ import (
 
 type Matrice [4 * 4]float32
 
+// Data access the internal storage
+func (m *Matrice) Data() *float32 {
+	return &m[0]
+}
+
 // Add perform matrice addition
 func (m *Matrice) Add(o *Matrice) *Matrice {
 	*m = *Add(m, o)

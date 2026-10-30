@@ -46,3 +46,11 @@ func Cross(v1, v2 Vector) Vector {
 		v1[0]*v2[1] - v1[1]*v2[0],
 	}
 }
+
+func Negate(v Vector) Vector {
+	return Vector{
+		-v[0],
+		-v[1],
+		-v[2],
+	}
+}

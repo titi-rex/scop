@@ -1,4 +1,4 @@
-package main
+package shaders
 
 import (
 	_ "embed"
@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
-	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 var (
@@ -17,10 +16,10 @@ var (
 	ErrLocNotRegister = errors.New("uniform location not searched")
 )
 
-//go:embed shaders/vertex.glsl
+//go:embed vertex.glsl
 var vertexShaderRaw string
 
-//go:embed shaders/fragment.glsl
+//go:embed fragment.glsl
 var fragmentShaderRaw string
 
 // Shader is the shader program.
@@ -117,9 +116,9 @@ func (s *Shader) Use() {
 	gl.UseProgram(s.id)
 }
 
-// SearchUV register a var name as a Uniform Variable.
+// SearchUniVar register a var name as a Uniform Variable.
 // Check if name is found.
-func (s *Shader) SearchUV(name string) error {
+func (s *Shader) SearchUniVar(name string) error {
 	loc := gl.GetUniformLocation(s.id, gl.Str(name+"\x00"))
 	if loc == -1 {
 		return fmt.Errorf("%s: %w", name, ErrLocNotFound)
@@ -131,11 +130,11 @@ func (s *Shader) SearchUV(name string) error {
 	return nil
 }
 
-// SearchUVAll try to register alls names as Uniform Variable
-func (s *Shader) SearchUVAll(names ...string) error {
+// SearchUniVarAll try to register alls names as Uniform Variable
+func (s *Shader) SearchUniVarAll(names ...string) error {
 	var errs []error
 	for _, name := range names {
-		errs = append(errs, s.SearchUV(name))
+		errs = append(errs, s.SearchUniVar(name))
 	}
 
 	err := errors.Join(errs...)
@@ -146,62 +145,14 @@ func (s *Shader) SearchUVAll(names ...string) error {
 	return nil
 }
 
-
-// SetUVMat set a UV name to the value from m
-func (s *Shader) SetUVMat(name string, m *matrice.Matrice) error {
+// SetUniVarMatrice set a UV name to the value from m
+func (s *Shader) SetUniVarMatrice(name string, m *matrice.Matrice) error {
 	loc, ok := s.uniLoc[name]
 	if !ok {
 		return ErrLocNotRegister
 	}
 
-	gl.UniformMatrix4fv(loc, 1, false, &m[0])
+	gl.UniformMatrix4fv(loc, 1, false, m.Data())
 
 	return nil
 }
-
-// SetUVMat4 set a UV name to the value from m
-func (s *Shader) SetUVMat4(name string, m mgl.Mat4) error {
-	loc, ok := s.uniLoc[name]
-	if !ok {
-		return ErrLocNotRegister
-	}
-
-	gl.UniformMatrix4fv(loc, 1, false, &m[0])
-
-	return nil
-}
-
-// from got
-//
-// vertex.glsl
-// #version 410
-// in vec3 vp;
-// void main() {
-//     gl_Position = vec4(vp, 1.0);
-// }
-//
-// fragment.glsl
-// #version 410
-// out vec4 frag_colour;
-// void main() {
-//     frag_colour = vec4(49, 18, 1, 1);
-// }
-//
-//
-// from ct
-//
-// vertex.glsl
-// #version 330 core
-// layout(location = 0) in vec3 vertexPosition;
-// in vec3 vp;
-// void main() {
-//     gl_Position.xyz = vertexPosition;
-//     gl_Position.w = 1.0;
-// }
-//
-// fragment.glsl
-// #version 330 core
-// out vec3 color;
-// void main(){
-//   color = vec3(1,0,0);
-// }

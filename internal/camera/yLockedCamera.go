@@ -1,7 +1,8 @@
 package camera
 
 import (
-	mgl "github.com/go-gl/mathgl/mgl32"
+	"scop/internal/ogm/matrice"
+	"scop/internal/ogm/vector"
 )
 
 type yLockedCamera struct {
@@ -10,24 +11,24 @@ type yLockedCamera struct {
 
 var _ Camera = (*yLockedCamera)(nil)
 
-func NewYLocked(pos, center mgl.Vec3) yLockedCamera {
+func NewYLocked(pos, center vector.Vector) yLockedCamera {
 	return yLockedCamera{
 		core: core{
 			eye:    pos,
 			center: center,
-			up:     mgl.Vec3{0, 1, 0},
+			up:     vector.Vector{0, 1, 0},
 			speed:  2.5,
 		},
 	}
 }
 
 // SetCenter implements [Camera].
-func (c *yLockedCamera) SetCenter(center mgl.Vec3) {
+func (c *yLockedCamera) SetCenter(center vector.Vector) {
 	c.core.center = center
 }
 
 // View implements [Camera].
-func (c *yLockedCamera) View() mgl.Mat4 {
+func (c *yLockedCamera) View() *matrice.Matrice {
 	return c.core.view()
 }
 

@@ -6,7 +6,7 @@ import (
 )
 
 type orthoCamera struct {
-	core core
+	core
 }
 
 var _ Camera = (*orthoCamera)(nil)
@@ -25,12 +25,12 @@ func NewOrhto(pos,center vector.Vector) orthoCamera {
 
 // SetCenter implements [Camera].
 func (c *orthoCamera) SetCenter(center vector.Vector) {
-	c.core.center = center
+	c.center = center
 }
 
 // View implements [Camera].
-func (c *orthoCamera) View() matrice.Matrice {
-	return c.core.view()
+func (c *orthoCamera) View() *matrice.Matrice {
+	return c.view()
 }
 
 // Move implements [Camera].
@@ -38,17 +38,17 @@ func (c *orthoCamera) Move(d Direction, deltaTime float32) {
 	velocity := c.core.speed * deltaTime
 	switch d {
 	case Forward:
-		c.core.zOrthoPlus(velocity)
+		c.zOrthoPlus(velocity)
 	case Backward:
-		c.core.zOrthoMinus(velocity)
+		c.zOrthoMinus(velocity)
 	case Right:
-		c.core.xOrthoMinus(velocity)
+		c.xOrthoMinus(velocity)
 	case Left:
-		c.core.xOrthoPlus(velocity)
+		c.xOrthoPlus(velocity)
 	case Up:
-		c.core.yOrthoPlus(velocity)
+		c.yOrthoPlus(velocity)
 	case Down:
-		c.core.yOrthoMinus(velocity)
+		c.yOrthoMinus(velocity)
 	}
 	// log.Println("camera:", c.core.eye)
 }

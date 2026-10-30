@@ -1,7 +1,9 @@
 package camera
 
 import (
-	mgl "github.com/go-gl/mathgl/mgl32"
+	"scop/internal/ogm/matrice"
+	"scop/internal/ogm/vector"
+
 )
 
 type basicCamera struct {
@@ -11,24 +13,24 @@ type basicCamera struct {
 var _ Camera = (*basicCamera)(nil)
 
 // NewBasic create a nice Camera to start with
-func NewBasic(pos, center mgl.Vec3) basicCamera {
+func NewBasic(pos, center vector.Vector) basicCamera {
 	return basicCamera{
 		core: core{
 			eye:    pos,
 			center: center,
-			up:     mgl.Vec3{0, 1, 0},
+			up:     vector.Vector{0, 1, 0},
 			speed:  2.5,
 		},
 	}
 }
 
 // SetCenter implements [Camera].
-func (c *basicCamera) SetCenter(center mgl.Vec3) {
+func (c *basicCamera) SetCenter(center vector.Vector) {
 	c.core.center = center
 }
 
 // View implements [Camera].
-func (c *basicCamera) View() mgl.Mat4 {
+func (c *basicCamera) View() *matrice.Matrice {
 	return c.core.view()
 }
 

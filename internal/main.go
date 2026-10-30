@@ -11,11 +11,11 @@ import (
 	"scop/internal/ogm/matrice"
 	"scop/internal/ogm/vector"
 	"scop/internal/parser"
+	"scop/internal/shaders"
 	"time"
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.4/glfw"
-	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 const (
@@ -30,11 +30,6 @@ var (
 	deltaTime  = float32(0)
 )
 
-const (
-	uVarModel      = "model"
-	uVarView       = "view"
-	uVarProjection = "projection"
-)
 
 func main() {
 	runtime.LockOSThread()
@@ -69,7 +64,7 @@ func main() {
 		return
 	}
 
-	shader, err := initShader()
+	shader, err := shaders.InitShader()
 	if err != nil {
 		fmt.Printf("end: %s\n", err.Error())
 		return
@@ -154,9 +149,9 @@ func main() {
 
 		// set matrice
 		err = errors.Join(
-			shader.SetUVMat(uVarModel, m0),
-			shader.SetUVMat4(uVarView, cam.View()),
-			shader.SetUVMat(uVarProjection, projMat),
+			shader.SetUniVarMatrice(shaders.UniVarModel, m0),
+			shader.SetUniVarMatrice(shaders.UniVarView, cam.View()),
+			shader.SetUniVarMatrice(shaders.UniVarProjection, projMat),
 		)
 		if err != nil {
 			log.Println("bad code!", err.Error())
@@ -201,36 +196,4 @@ func doKeyPress(k glfw.Key, do func()) {
 	if glfw.GetCurrentContext().GetKey(k) == glfw.Press {
 		do()
 	}
-}
-
-func initShader() (Shader, error) {
-	// create shader
-	shader := NewShader()
-
-	// compile source
-	err := errors.Join(
-		shader.CompileSource(gl.VERTEX_SHADER, "vertouille", vertexShaderRaw),
-		shader.CompileSource(gl.FRAGMENT_SHADER, "fragouille", fragmentShaderRaw),
-	)
-	if err != nil {
-		return Shader{}, err
-	}
-
-	// link shader
-	err = shader.Link()
-	if err != nil {
-		return Shader{}, err
-	}
-
-	// shader variable location
-	err = shader.SearchUVAll(
-		uVarModel,
-		uVarView,
-		uVarProjection,
-	)
-	if err != nil {
-		return Shader{}, err
-	}
-
-	return shader, nil
 }

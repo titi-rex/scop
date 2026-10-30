@@ -7,7 +7,7 @@ import (
 
 type Camera interface {
 	// Return the view matrice.
-	View() matrice.Matrice
+	View() *matrice.Matrice
 	// Set the center (direction of look)
 	SetCenter(center vector.Vector)
 	// Move the camera in a direction

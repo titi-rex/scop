@@ -39,22 +39,20 @@ func NewPerspective(fovY, aspect, near, far float32) *Matrice {
 }
 
 // LookAt
-func LookAt(eye, center, up vector.Vector) Matrice {
+// see [mgl32.LookAtV]
+func LookAt(eye, center, up vector.Vector) *Matrice {
 	f := vector.Sub(center, eye)
 	f.Normalize()
 	s := vector.Cross(f, up)
 	s.Normalize()
 	u := vector.Cross(s, f)
 
-	M := Matrice{
+	M := &Matrice{
 		s[0], u[0], -f[0], 0,
 		s[1], u[1], -f[1], 0,
 		s[2], u[2], -f[2], 0,
 		0, 0, 0, 1,
 	}
 
-	// TODO: Vector.Negate()
-	M.Translate(-eye)
-
-	return M
+	return M.Translate(vector.Negate(eye))
 }
