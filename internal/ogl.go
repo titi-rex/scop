@@ -14,7 +14,7 @@ var (
 	}
 )
 
-// initOpenGL initializes OpenGL and returns an initialized program.
+// initOpenGL initializes OpenGL.
 func initOpenGL() error {
 	// init openGL after a current context
 	if err := gl.Init(); err != nil {

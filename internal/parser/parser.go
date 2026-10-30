@@ -78,9 +78,7 @@ func NewObj(path string) (Object, error) {
 		return Object{}, err
 	}
 
-	// fmt.Printf("vert bef: %v\n", obj.Vertices)
 	obj.normalize()
-	// fmt.Printf("vert aft: %v\n", obj.Vertices)
 	obj.convertIndices()
 	obj.IndicesCount = int32(len(obj.Indices))
 
@@ -143,10 +141,6 @@ func (o *Object) loadFace(raw []string) error {
 }
 
 func (o *Object) normalize() {
-	// log.Println("maxs:", o.max)
-	// log.Println("mins:", o.min)
-
-	// On centre et met le modele a l'echelle
 	centerX := float32((o.min[0] + o.max[0]) / 2)
 	centerY := float32((o.min[1] + o.max[1]) / 2)
 	centerZ := float32((o.min[2] + o.max[2]) / 2)

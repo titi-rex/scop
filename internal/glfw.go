@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	wWidth              = 800
-	wHeight             = 600
+	wWidth              = 540
+	wHeight             = 540
 	sensitivity float64 = 0.05
 )
 

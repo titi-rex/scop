@@ -64,21 +64,21 @@ func NewRotation(angle float32, axis vector.Vector) *Matrice {
 func (m *Matrice) RotateX(angle float32) *Matrice {
 	rot := NewRotationX(angle)
 
-	return m.Mul(rot)
+	return m.Mul(*rot)
 }
 
 // RotateY rotate the matrice by angle around the Y-axis.
 func (m *Matrice) RotateY(angle float32) *Matrice {
 	rot := NewRotationY(angle)
 
-	return m.Mul(rot)
+	return m.Mul(*rot)
 }
 
 // RotateZ rotate the matrice by angle around the Z-axis.
 func (m *Matrice) RotateZ(angle float32) *Matrice {
 	rot := NewRotationZ(angle)
 
-	return m.Mul(rot)
+	return m.Mul(*rot)
 }
 
 // RotateXYZ rotate the matrice by each angles around XYZ.
@@ -94,5 +94,5 @@ func (m *Matrice) RotateXYZ(angles vector.Vector) *Matrice {
 func (m *Matrice) Rotate(angle float32, axis vector.Vector) *Matrice {
 	rot := NewRotation(angle, axis)
 
-	return m.Mul(rot)
+	return m.Mul(*rot)
 }

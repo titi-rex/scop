@@ -95,6 +95,8 @@ func main() {
 
 	// wireframe mode
 	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+	// viewport
+	// gl.Viewport(0,0, wWidth, wHeight)
 
 	// load image
 	r, err := texture.NewImg("./resources/square.png")
@@ -107,14 +109,21 @@ func main() {
 	tid := texture.NewTexture(r)
 	_ = tid
 
+
+	// texture matrix
+	// tmx := matrice.NewIdent()
+	// tmx := matrice.LookAt(vector.Vector{0, 0, 3}, vector.Vector{0, 0, 1}, vector.Vector{0, 1, 0})
+	// tmx.Inverse()
+
 	// set texture univar
-	err = shader.SetUniVarUInt(shaders.UniVarTexture1, 0)
+	err = errors.Join(
+		shader.SetUniVarUInt(shaders.UniVarTexture1, 0),
+		// shader.SetUniVarMatrice(shaders.UniVarTextureMatrix, tmx),
+	)
 	if err != nil {
-		fmt.Printf("stop: texture: %s\n", err.Error())
+		fmt.Printf("stop: univar textures : %s\n", err.Error())
 		return
 	}
-
-
 
 	// time
 	var lastFrame float64
@@ -139,7 +148,7 @@ func main() {
 		shader.Use()
 
 		// compute projection
-		projMat := matrice.NewPerspective(ogm.Rad(float32(fov)), wWidth/wHeight, 0.1, 100)
+		projMat := matrice.NewPerspective(ogm.Rad(float32(fov)), wWidth/wHeight, 0.1, 10)
 
 		// compute autorotation
 		angle.Add(autoRotate)
@@ -180,9 +189,12 @@ func main() {
 			autoRotate = vector.Vector{}
 			pos = vector.Vector{}
 		})
-		doKeyPress(glfw.KeyX, func() { angle[0] += rotationSpeed })
-		doKeyPress(glfw.KeyY, func() { angle[1] += rotationSpeed })
+		doKeyPress(glfw.KeyUp, func() { angle[0] += rotationSpeed })
+		doKeyPress(glfw.KeyDown, func() { angle[0] -= rotationSpeed })
+		doKeyPress(glfw.KeyRight, func() { angle[1] += rotationSpeed })
+		doKeyPress(glfw.KeyLeft, func() { angle[1] -= rotationSpeed })
 		doKeyPress(glfw.KeyZ, func() { angle[2] += rotationSpeed })
+		doKeyPress(glfw.KeyX, func() { angle[2] -= rotationSpeed })
 		doKeyPress(glfw.Key1, func() { autoRotate[0] += rotationSpeed })
 		doKeyPress(glfw.Key2, func() { autoRotate[1] += rotationSpeed })
 		doKeyPress(glfw.Key3, func() { autoRotate[2] += rotationSpeed })
