@@ -28,12 +28,17 @@ func Mul(v Vector, s float32) Vector {
 	}
 }
 
-func Normalize(v1 Vector) Vector {
-	l := 1.0 / v1.Len()
+func Normalize(v Vector) Vector {
+	ln := v.Len()
+	if ln <= 0 {
+		return v
+	}
+
+	l := 1.0 / ln
 	return Vector{
-		v1[0] * l,
-		v1[1] * l,
-		v1[2] * l,
+		v[0] * l,
+		v[1] * l,
+		v[2] * l,
 	}
 }
 

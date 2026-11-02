@@ -80,8 +80,8 @@ func NewObj(path string) (Object, error) {
 
 	obj.convertFacesToTriangle()
 	obj.normalize()
-	fmt.Printf("\n\naft: %+v\n", obj.Vertices)
-	fmt.Printf("\n\nvef %+v\n", obj.Indices)
+	// fmt.Printf("\n\naft: %+v\n", obj.Vertices)
+	// fmt.Printf("\n\nvef %+v\n", obj.Indices)
 	obj.IndicesCount = int32(len(obj.Indices))
 
 	return obj, nil
@@ -179,50 +179,36 @@ func (o *Object) normalize() {
 		v1.Sub(center).Mul(scaleFactor)
 		v2.Sub(center).Mul(scaleFactor)
 
-		vertices = append(vertices, []float32{v0.X(), v0.Y(), v0.Z(), 0, 0}...)
-		// vertices = append(vertices, []float32{v0.X(), v0.Y(), v0.Z()}...)
-		indices = append(indices, currentIdx); currentIdx++
+		u, v := ProjTexture(v0, o.min, size, n)
+		vertices = append(vertices, []float32{v0.X(), v0.Y(), v0.Z(), u, v}...)
+		indices = append(indices, currentIdx)
+		currentIdx++
 
-		vertices = append(vertices, []float32{v1.X(), v1.Y(), v1.Z(), 0, 0}...)
-		// vertices = append(vertices, []float32{v1.X(), v1.Y(), v1.Z()}...)
-		indices = append(indices, currentIdx); currentIdx++
+		vertices = append(vertices, []float32{v1.X(), v1.Y(), v1.Z(), u, v}...)
+		indices = append(indices, currentIdx)
+		currentIdx++
 
-		vertices = append(vertices, []float32{v2.X(), v2.Y(), v2.Z(), 0, 0}...)
-		// vertices = append(vertices, []float32{v2.X(), v2.Y(), v2.Z()}...)
-		indices = append(indices, currentIdx); currentIdx++
-
-		// vector.LoadIntoSlice(vertices, v0, idx0*3)
-		// vertices[idx0*3+3] = 0
-		// vertices[idx0*3+4] = 0
-		// vector.LoadIntoSlice(vertices, v1, idx1*3)
-		// vertices[idx1*3+3] = 0
-		// vertices[idx1*3+4] = 0
-		// vector.LoadIntoSlice(vertices, v2, idx2*3)
-		// vertices[idx2*3+3] = 0
-		// vertices[idx2*3+4] = 0
-
-		// texture planar proj
-		uv := vector.Sub(v0, o.min)
-		uv.DivVec(size).Clamp0()
-		var u, v float32
-
-		// choose proj with the greater normal axis
-		if n.Z() >= n.X() && n.Z() >= n.Y() { // plan XY
-			u = uv.X()
-			v = uv.Y()
-		} else if n.X() >= n.Y() && n.X() >= n.Z() { // plan YZ
-			u = uv.Z()
-			v = uv.Y()
-		} else { // plan XZ
-			u = uv.X()
-			v = uv.Z()
-		}
-		_ = u + v
-
+		vertices = append(vertices, []float32{v2.X(), v2.Y(), v2.Z(), u, v}...)
+		indices = append(indices, currentIdx)
+		currentIdx++
 	}
 
 	o.Vertices = vertices
 	o.Indices = indices
+}
+
+func ProjTexture(vertice, min, size, normal vector.Vector) (float32, float32) {
+	uv := vector.Sub(vertice, min)
+	uv.DivVec(size).Clamp0()
+
+	// choose proj with the greater normal axis
+	if normal.Z() >= normal.X() && normal.Z() >= normal.Y() { // plan XY
+		return uv.X(), uv.Y()
+	} else if normal.X() >= normal.Y() && normal.X() >= normal.Z() { // plan YZ
+		return uv.Z(), uv.Y()
+	} else { // plan XZ
+		return uv.X(), uv.Z()
+	}
 }
 
 // convert indices from 1..21, -1, -4,.. to >=0 indices

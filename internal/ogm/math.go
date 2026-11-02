@@ -47,7 +47,7 @@ func Abs(f float32) float32 {
 }
 
 func Clamp0(value float32) float32 {
-	if value < 0 {
+	if value <= 0 {
 		return 0
 	}
 	return value

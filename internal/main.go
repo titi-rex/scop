@@ -92,18 +92,17 @@ func main() {
 	// attribute for vertex
 	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
 	gl.EnableVertexAttribArray(0)
+
 	// attributes for texture
 	gl.VertexAttribPointerWithOffset(1, 2, gl.FLOAT, false, 5*4, 3*4)
 	gl.EnableVertexAttribArray(1)
 	UnbindVAO()
 
 	// wireframe mode
-	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-	// viewport
-	// gl.Viewport(0,0, wWidth, wHeight)
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 
 	// load image
-	r, err := texture.NewImg("./resources/square.png")
+	r, err := texture.NewImg("./resources/wall.jpg")
 	if err != nil {
 		fmt.Printf("stop: texture: %s\n", err.Error())
 		return
@@ -111,17 +110,11 @@ func main() {
 
 	// create texture
 	tid := texture.NewTexture(r)
-	_ = tid
-
-	// texture matrix
-	// tmx := matrice.NewIdent()
-	// tmx := matrice.LookAt(vector.Vector{0, 0, 3}, vector.Vector{0, 0, 1}, vector.Vector{0, 1, 0})
-	// tmx.Inverse()
 
 	// set texture univar
 	err = errors.Join(
 		shader.SetUniVarUInt(shaders.UniVarTexture1, 0),
-		// shader.SetUniVarMatrice(shaders.UniVarTextureMatrix, tmx),
+		// shader.SetUniVarUInt(shaders.UniVarMode, 1),
 	)
 	if err != nil {
 		fmt.Printf("stop: univar textures : %s\n", err.Error())
@@ -180,7 +173,7 @@ func main() {
 		gl.BindTexture(gl.TEXTURE_2D, tid)
 		gl.BindVertexArray(vao)
 		gl.DrawElements(gl.TRIANGLES, obj.IndicesCount, gl.UNSIGNED_INT, nil)
-		gl.BindVertexArray(0)
+		UnbindVAO()
 		window.SwapBuffers()
 
 		// handle event
