@@ -72,3 +72,7 @@ func NewVAO() uint32 {
 
 	return vao
 }
+
+func UnbindVAO() {
+	gl.BindVertexArray(0)
+}

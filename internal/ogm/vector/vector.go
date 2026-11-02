@@ -16,6 +16,26 @@ func (v1 Vector) Len() float32 {
 	return ogm.Sqrt(v1[0]*v1[0] + v1[1]*v1[1] + v1[2]*v1[2])
 }
 
+func (v *Vector) Data() [3]float32 {
+	return [3]float32(*v)
+}
+
+// WARNING: this function can panic
+func LoadIntoSlice(s []float32, v Vector, idx uint32) {
+	s[idx] = v[0]
+	s[idx+1] = v[1]
+	s[idx+2] = v[2]
+}
+
+// WARNING: this function can panic
+func LoadFromSlice(s []float32, idx uint32) Vector {
+	return Vector{
+		s[idx],
+		s[idx+1],
+		s[idx+2],
+	}
+}
+
 func MglToVec(v mgl32.Vec3) Vector {
 	return Vector{
 		v[0],

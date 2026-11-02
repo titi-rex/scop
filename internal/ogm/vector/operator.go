@@ -1,5 +1,7 @@
 package vector
 
+import "scop/internal/ogm"
+
 // operator
 
 func Add(v1, v2 Vector) Vector {
@@ -52,5 +54,28 @@ func Negate(v Vector) Vector {
 		-v[0],
 		-v[1],
 		-v[2],
+	}
+}
+
+func Abs(v Vector) Vector {
+	return Vector{
+		ogm.Abs(v[0]),
+		ogm.Abs(v[1]),
+		ogm.Abs(v[2]),
+	}
+}
+
+func DivVec(v1, v2 Vector) Vector {
+	return Vector{
+		v1[0] / v2[0],
+		v1[1] / v2[1],
+		v1[2] / v2[2],
+	}
+}
+func Clamp0(v Vector) Vector {
+	return Vector{
+		ogm.Clamp0(v[0]),
+		ogm.Clamp0(v[1]),
+		ogm.Clamp0(v[2]),
 	}
 }

@@ -89,9 +89,13 @@ func main() {
 	}()
 
 	// vao.2
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
+	// attribute for vertex
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 5*4, nil)
 	gl.EnableVertexAttribArray(0)
-	gl.BindVertexArray(0)
+	// attributes for texture
+	gl.VertexAttribPointerWithOffset(1, 2, gl.FLOAT, false, 5*4, 3*4)
+	gl.EnableVertexAttribArray(1)
+	UnbindVAO()
 
 	// wireframe mode
 	// gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
@@ -108,7 +112,6 @@ func main() {
 	// create texture
 	tid := texture.NewTexture(r)
 	_ = tid
-
 
 	// texture matrix
 	// tmx := matrice.NewIdent()

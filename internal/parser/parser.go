@@ -7,11 +7,11 @@ import (
 	"log"
 	"math"
 	"os"
+	"scop/internal/ogm/matrice"
+	"scop/internal/ogm/vector"
 
 	"strconv"
 	"strings"
-
-	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 type token string
@@ -29,11 +29,11 @@ type Object struct {
 	Vertices     []float32
 	Indices      []uint32
 	IndicesCount int32
-	Matrice      mgl.Mat4
+	Matrice      matrice.Matrice
 
 	tmpIndices []int32
-	max        []float64
-	min        []float64
+	max        vector.Vector
+	min        vector.Vector
 }
 
 func NewObj(path string) (Object, error) {
@@ -46,9 +46,9 @@ func NewObj(path string) (Object, error) {
 	log.Println("Load obj from", path)
 
 	obj := Object{
-		Matrice: mgl.Ident4(),
-		max:     []float64{-math.MaxFloat64, -math.MaxFloat64, -math.MaxFloat64},
-		min:     []float64{math.MaxFloat64, math.MaxFloat64, math.MaxFloat64},
+		Matrice: *matrice.NewIdent(),
+		max:     vector.Vector{-math.MaxFloat32, -math.MaxFloat32, -math.MaxFloat32},
+		min:     vector.Vector{math.MaxFloat32, math.MaxFloat32, math.MaxFloat32},
 	}
 
 	scanner := bufio.NewScanner(file)
@@ -78,8 +78,10 @@ func NewObj(path string) (Object, error) {
 		return Object{}, err
 	}
 
+	obj.convertFacesToTriangle()
 	obj.normalize()
-	obj.convertIndices()
+	fmt.Printf("\n\naft: %+v\n", obj.Vertices)
+	fmt.Printf("\n\nvef %+v\n", obj.Indices)
 	obj.IndicesCount = int32(len(obj.Indices))
 
 	return obj, nil
@@ -99,14 +101,14 @@ func (o *Object) loadVertice(raw []string) error {
 		log.Println("ignored garbage:", raw[3:])
 	}
 
-	o.max[0] = max(x, o.max[0])
-	o.min[0] = min(x, o.min[0])
+	o.max[0] = max(float32(x), o.max[0])
+	o.min[0] = min(float32(x), o.min[0])
 
-	o.max[1] = max(y, o.max[1])
-	o.min[1] = min(y, o.min[1])
+	o.max[1] = max(float32(y), o.max[1])
+	o.min[1] = min(float32(y), o.min[1])
 
-	o.max[2] = max(z, o.max[2])
-	o.min[2] = min(z, o.min[2])
+	o.max[2] = max(float32(z), o.max[2])
+	o.min[2] = min(float32(z), o.min[2])
 
 	o.Vertices = append(o.Vertices, float32(x))
 	o.Vertices = append(o.Vertices, float32(y))
@@ -128,7 +130,7 @@ func (o *Object) loadFace(raw []string) error {
 		values = append(values, int32(v))
 	}
 
-	// triangle truc
+	// triangle fan
 	var n int32
 	for i := 1; i+1 < len(raw); i += 1 {
 		o.tmpIndices = append(o.tmpIndices, int32(values[0]))
@@ -141,37 +143,90 @@ func (o *Object) loadFace(raw []string) error {
 }
 
 func (o *Object) normalize() {
-	centerX := float32((o.min[0] + o.max[0]) / 2)
-	centerY := float32((o.min[1] + o.max[1]) / 2)
-	centerZ := float32((o.min[2] + o.max[2]) / 2)
+	const targetScale = float32(1)
 
-	sizeX := o.max[0] - o.min[0]
-	sizeY := o.max[1] - o.min[1]
-	sizeZ := o.max[2] - o.min[2]
+	center := vector.Add(o.min, o.max)
+	center.Mul(0.5)
 
-	maxExtent := max(sizeX, sizeY, sizeZ)
+	size := vector.Sub(o.max, o.min)
 
-	// scaleFactor := (normalize && maxExtent > 0) ? (targetScale / maxExtent) : 1;
-	log.Println("max extend", maxExtent)
+	maxExtent := max(size.X(), size.Y(), size.Z())
 
-	targetScale := float64(1)
 	scaleFactor := float32(1)
 	if maxExtent > 0 {
 		scaleFactor = float32(targetScale / maxExtent)
 	}
 
-	vertices := make([]float32, len(o.Vertices))
-	for i := 0; i < len(o.Vertices); i += 3 {
-		vertices[i] = (o.Vertices[i] - centerX) * scaleFactor
-		vertices[i+1] = (o.Vertices[i+1] - centerY) * scaleFactor
-		vertices[i+2] = (o.Vertices[i+2] - centerZ) * scaleFactor
+	// vertices := make([]float32, len(o.Indices))
+	var vertices []float32
+	var indices []uint32
+	currentIdx := uint32(0)
+	for i := 0; i < len(o.Indices); i += 3 {
+		idx0 := o.Indices[i]
+		idx1 := o.Indices[i+1]
+		idx2 := o.Indices[i+2]
+
+		v0 := vector.LoadFromSlice(o.Vertices, idx0*3)
+		v1 := vector.LoadFromSlice(o.Vertices, idx1*3)
+		v2 := vector.LoadFromSlice(o.Vertices, idx2*3)
+
+		a := vector.Sub(v1, v0)
+		b := vector.Sub(v2, v0)
+		n := vector.Cross(a, b)
+		n.Normalize().Abs()
+
+		v0.Sub(center).Mul(scaleFactor)
+		v1.Sub(center).Mul(scaleFactor)
+		v2.Sub(center).Mul(scaleFactor)
+
+		vertices = append(vertices, []float32{v0.X(), v0.Y(), v0.Z(), 0, 0}...)
+		// vertices = append(vertices, []float32{v0.X(), v0.Y(), v0.Z()}...)
+		indices = append(indices, currentIdx); currentIdx++
+
+		vertices = append(vertices, []float32{v1.X(), v1.Y(), v1.Z(), 0, 0}...)
+		// vertices = append(vertices, []float32{v1.X(), v1.Y(), v1.Z()}...)
+		indices = append(indices, currentIdx); currentIdx++
+
+		vertices = append(vertices, []float32{v2.X(), v2.Y(), v2.Z(), 0, 0}...)
+		// vertices = append(vertices, []float32{v2.X(), v2.Y(), v2.Z()}...)
+		indices = append(indices, currentIdx); currentIdx++
+
+		// vector.LoadIntoSlice(vertices, v0, idx0*3)
+		// vertices[idx0*3+3] = 0
+		// vertices[idx0*3+4] = 0
+		// vector.LoadIntoSlice(vertices, v1, idx1*3)
+		// vertices[idx1*3+3] = 0
+		// vertices[idx1*3+4] = 0
+		// vector.LoadIntoSlice(vertices, v2, idx2*3)
+		// vertices[idx2*3+3] = 0
+		// vertices[idx2*3+4] = 0
+
+		// texture planar proj
+		uv := vector.Sub(v0, o.min)
+		uv.DivVec(size).Clamp0()
+		var u, v float32
+
+		// choose proj with the greater normal axis
+		if n.Z() >= n.X() && n.Z() >= n.Y() { // plan XY
+			u = uv.X()
+			v = uv.Y()
+		} else if n.X() >= n.Y() && n.X() >= n.Z() { // plan YZ
+			u = uv.Z()
+			v = uv.Y()
+		} else { // plan XZ
+			u = uv.X()
+			v = uv.Z()
+		}
+		_ = u + v
+
 	}
 
 	o.Vertices = vertices
+	o.Indices = indices
 }
 
 // convert indices from 1..21, -1, -4,.. to >=0 indices
-func (o *Object) convertIndices() {
+func (o *Object) convertFacesToTriangle() {
 	nv := int32(len(o.Vertices))
 
 	for _, v := range o.tmpIndices {

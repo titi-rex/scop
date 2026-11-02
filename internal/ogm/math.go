@@ -41,3 +41,14 @@ func Tan(a float32) float32 {
 func Sqrt(f float32) float32 {
 	return float32(math.Sqrt(float64(f)))
 }
+
+func Abs(f float32) float32 {
+	return float32(math.Abs(float64(f)))
+}
+
+func Clamp0(value float32) float32 {
+	if value < 0 {
+		return 0
+	}
+	return value
+}

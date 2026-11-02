@@ -15,5 +15,4 @@ void main() {
     gl_Position = projection * view * modelPosition;
 
     TexCoord = modelPosition.xz;
-    // TexCoord = texture_matrix * modelPosition;
 }
