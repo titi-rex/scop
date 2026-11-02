@@ -12,4 +12,5 @@ out vec2 v_text_crd;
 void main() {
     gl_Position = u_projection * u_view * u_model * vec4(i_position, 1.0);
     v_text_crd = i_text_crd;
+    // v_text_crd = i_position.yz;
 }

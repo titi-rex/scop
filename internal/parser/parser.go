@@ -184,10 +184,12 @@ func (o *Object) normalize() {
 		indices = append(indices, currentIdx)
 		currentIdx++
 
+		u, v = ProjTexture(v1, o.min, size, n)
 		vertices = append(vertices, []float32{v1.X(), v1.Y(), v1.Z(), u, v}...)
 		indices = append(indices, currentIdx)
 		currentIdx++
 
+		u, v = ProjTexture(v2, o.min, size, n)
 		vertices = append(vertices, []float32{v2.X(), v2.Y(), v2.Z(), u, v}...)
 		indices = append(indices, currentIdx)
 		currentIdx++
