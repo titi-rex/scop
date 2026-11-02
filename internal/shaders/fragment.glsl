@@ -2,26 +2,17 @@
 
 in vec2 v_text_crd;
 
-uniform int u_mode;
+uniform uint u_mode;
 uniform sampler2D u_texture1;
 
 out vec4 color;
 
 void main() {
-  vec2 text_crd_fixed = vec2(v_text_crd.x, 1.0 - v_text_crd.y);
-  color = texture(u_texture1, text_crd_fixed);
-  // color = texture(u_texture1, v_text_crd);
-
+  float r = (gl_PrimitiveID % 255) / 255.0;
+  vec4 base_color = vec4(r, r, r, 1);
+  if (u_mode == 0) {
+  color = base_color;
+  } else if (u_mode == 1) {
+    color = mix(base_color, texture(u_texture1, v_text_crd), 1);
+  }
 }
-
-
-// void main() {
-//   if (u_mode == 0) {
-//     float r = (gl_PrimitiveID % 255) / 255.0;
-//     color = vec4(r, r, r, 1);
-//   } else if (u_mode == 1) {
-//     // vec2 text_crd_fixed = vec2(v_text_crd.x, 1.0 - v_text_crd.y);
-//     // color = texture(u_texture1, text_crd_fixed);
-//     color = texture(u_texture1, v_text_crd);
-//   }
-// }

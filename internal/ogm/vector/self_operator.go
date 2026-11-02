@@ -46,7 +46,6 @@ func (v *Vector) Clamp0() *Vector {
 	return v
 }
 
-
 func (v *Vector) DivVec(o Vector) *Vector {
 	*v = DivVec(*v, o)
 

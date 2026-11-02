@@ -29,16 +29,16 @@ func Mul(v Vector, s float32) Vector {
 }
 
 func Normalize(v Vector) Vector {
-	ln := v.Len()
+	ln := v.Norm()
 	if ln <= 0 {
 		return v
 	}
 
-	l := 1.0 / ln
+	f := 1.0 / ln
 	return Vector{
-		v[0] * l,
-		v[1] * l,
-		v[2] * l,
+		v[0] * f,
+		v[1] * f,
+		v[2] * f,
 	}
 }
 
@@ -82,5 +82,21 @@ func Clamp0(v Vector) Vector {
 		ogm.Clamp0(v[0]),
 		ogm.Clamp0(v[1]),
 		ogm.Clamp0(v[2]),
+	}
+}
+
+func Map(v Vector, fn func(float32) float32) Vector {
+	return Vector{
+		fn(v[0]),
+		fn(v[1]),
+		fn(v[2]),
+	}
+}
+
+func Zip(v1, v2 Vector, fn func(e1 float32, e2 float32) float32) Vector {
+	return Vector{
+		fn(v1[0], v2[0]),
+		fn(v1[1], v2[1]),
+		fn(v1[2], v2[2]),
 	}
 }

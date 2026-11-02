@@ -41,7 +41,7 @@ func initOpenGL() error {
 func NewBufferObject[T uint32 | int32 | float32](target uint32, data []T) uint32 {
 	var id uint32
 
-	log.Println("create new Buffer Object for target:", targetName[target])
+	log.Println("create Buffer Object for target:", targetName[target])
 
 	gl.GenBuffers(1, &id)
 	gl.BindBuffer(target, id)

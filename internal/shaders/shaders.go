@@ -167,3 +167,14 @@ func (s *Shader) SetUniVarUInt(name string, v uint32) error {
 
 	return nil
 }
+
+func (s *Shader) SetUniVarInt(name string, v int32) error {
+	loc, ok := s.uniLoc[name]
+	if !ok {
+		return ErrLocNotRegister
+	}
+
+	gl.Uniform1i(loc, v)
+
+	return nil
+}

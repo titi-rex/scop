@@ -39,7 +39,7 @@ func InitShader() (Shader, error) {
 		UniVarModel,
 		UniVarView,
 		UniVarProjection,
-		// UniVarMode,
+		UniVarMode,
 		UniVarTexture1,
 	)
 	if err != nil {

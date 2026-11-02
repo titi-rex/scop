@@ -24,6 +24,7 @@ const (
 	face    token = "f"
 )
 
+// Object is the struct holding the vertices data
 type Object struct {
 	Name         string
 	Vertices     []float32
@@ -36,6 +37,7 @@ type Object struct {
 	min        vector.Vector
 }
 
+// NewObj load an object from an .obj file
 func NewObj(path string) (Object, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -69,7 +71,7 @@ func NewObj(path string) (Object, error) {
 				return Object{}, err
 			}
 		default:
-			log.Println("unknow line id", words[0])
+			log.Println("ignored line id", words[0])
 		}
 	}
 
@@ -78,15 +80,21 @@ func NewObj(path string) (Object, error) {
 		return Object{}, err
 	}
 
-	obj.convertFacesToTriangle()
-	obj.normalize()
-	// fmt.Printf("\n\naft: %+v\n", obj.Vertices)
-	// fmt.Printf("\n\nvef %+v\n", obj.Indices)
+	obj.convertIndices()
+	err = obj.normalize()
+	if err != nil {
+		return Object{}, err
+	}
 	obj.IndicesCount = int32(len(obj.Indices))
 
 	return obj, nil
 }
 
+// loadVertice parse a vertice line, it expect 3 points.
+//
+// example:
+//
+//	v 1.21513 2.213553 0.5654654
 func (o *Object) loadVertice(raw []string) error {
 
 	x, errX := strconv.ParseFloat(raw[0], 32)
@@ -117,6 +125,12 @@ func (o *Object) loadVertice(raw []string) error {
 	return nil
 }
 
+// loadFace parse a face line with an arbitrary number of vertices referred
+// and make a triangle fan with. [https://en.wikipedia.org/wiki/Triangle_fan]
+//
+// example:
+//
+//	f 1 5 3 14
 func (o *Object) loadFace(raw []string) error {
 	var values []int32
 	for _, s := range raw {
@@ -142,22 +156,22 @@ func (o *Object) loadFace(raw []string) error {
 	return nil
 }
 
-func (o *Object) normalize() {
+// normalize center and scale the object.
+// It also apply a planar projection to compute texture coordinates.
+func (o *Object) normalize() error {
 	const targetScale = float32(1)
 
 	center := vector.Add(o.min, o.max)
 	center.Mul(0.5)
 
 	size := vector.Sub(o.max, o.min)
-
-	maxExtent := max(size.X(), size.Y(), size.Z())
-
-	scaleFactor := float32(1)
-	if maxExtent > 0 {
-		scaleFactor = float32(targetScale / maxExtent)
+	if size.Norm() == 0 {
+		return errors.New("all points at same position")
 	}
 
-	// vertices := make([]float32, len(o.Indices))
+	greaterSide := max(size.X(), size.Y(), size.Z())
+	scaleFactor := float32(targetScale / greaterSide)
+
 	var vertices []float32
 	var indices []uint32
 	currentIdx := uint32(0)
@@ -175,33 +189,30 @@ func (o *Object) normalize() {
 		n := vector.Cross(a, b)
 		n.Normalize().Abs()
 
-		v0.Sub(center).Mul(scaleFactor)
-		v1.Sub(center).Mul(scaleFactor)
-		v2.Sub(center).Mul(scaleFactor)
+		for _, vec := range []vector.Vector{v0, v1, v2} {
+			vec.Sub(center).Mul(scaleFactor)
+			u, v := ProjTexture(vec, o.min, size, n)
 
-		u, v := ProjTexture(v0, o.min, size, n)
-		vertices = append(vertices, []float32{v0.X(), v0.Y(), v0.Z(), u, v}...)
-		indices = append(indices, currentIdx)
-		currentIdx++
-
-		u, v = ProjTexture(v1, o.min, size, n)
-		vertices = append(vertices, []float32{v1.X(), v1.Y(), v1.Z(), u, v}...)
-		indices = append(indices, currentIdx)
-		currentIdx++
-
-		u, v = ProjTexture(v2, o.min, size, n)
-		vertices = append(vertices, []float32{v2.X(), v2.Y(), v2.Z(), u, v}...)
-		indices = append(indices, currentIdx)
-		currentIdx++
+			vertices = append(vertices, []float32{vec.X(), vec.Y(), vec.Z(), u, v}...)
+			indices = append(indices, currentIdx)
+			currentIdx++
+		}
 	}
 
 	o.Vertices = vertices
 	o.Indices = indices
+	return nil
 }
 
+// ProjTexture project texture onto the nearer plan.
 func ProjTexture(vertice, min, size, normal vector.Vector) (float32, float32) {
-	uv := vector.Sub(vertice, min)
-	uv.DivVec(size).Clamp0()
+	duv := vector.Sub(vertice, min)
+	uv := vector.Zip(duv, size, func(e1, e2 float32) float32 {
+		if e2 < 0 {
+			return 0
+		}
+		return e1 / e2
+	})
 
 	// choose proj with the greater normal axis
 	if normal.Z() >= normal.X() && normal.Z() >= normal.Y() { // plan XY
@@ -214,7 +225,7 @@ func ProjTexture(vertice, min, size, normal vector.Vector) (float32, float32) {
 }
 
 // convert indices from 1..21, -1, -4,.. to >=0 indices
-func (o *Object) convertFacesToTriangle() {
+func (o *Object) convertIndices() {
 	nv := int32(len(o.Vertices))
 
 	for _, v := range o.tmpIndices {
@@ -226,3 +237,10 @@ func (o *Object) convertFacesToTriangle() {
 		o.Indices = append(o.Indices, uint32(v))
 	}
 }
+
+// func UV(x, min, size float32) float32 {
+// 	if size < 0 {
+// 		return 0
+// 	}
+// 	return (x - min) / size
+// }
