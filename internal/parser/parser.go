@@ -9,6 +9,7 @@ import (
 	"os"
 	"scop/internal/ogm/matrice"
 	"scop/internal/ogm/vector"
+	"slices"
 
 	"strconv"
 	"strings"
@@ -17,11 +18,19 @@ import (
 type token string
 
 const (
-	wordSep token = " "
-	comment token = "#"
-	objName token = "o"
-	vertice token = "v"
-	face    token = "f"
+	wordSep   token = " "
+	comment   token = "#"
+	objName   token = "o"
+	vertice   token = "v"
+	face      token = "f"
+	matLib    token = "mtllib"
+	matUse    token = "usemtl"
+	smoothing token = "s"
+)
+
+var (
+	ErrUnknowToken     = errors.New("unknow ligne prefix")
+	ErrMissingVertices = errors.New("missing vertices")
 )
 
 // Object is the struct holding the vertices data
@@ -70,21 +79,25 @@ func NewObj(path string) (Object, error) {
 			if err := obj.loadFace(words[1:]); err != nil {
 				return Object{}, err
 			}
-		default:
+		case smoothing, matLib, matUse:
 			log.Println("ignored line id", words[0])
+		default:
+			return Object{}, fmt.Errorf("%s: %w", words[0], ErrUnknowToken)
 		}
 	}
 
-	err = scanner.Err()
-	if err != nil {
-		return Object{}, err
+	if err = scanner.Err(); err != nil {
+		return Object{}, fmt.Errorf("scanner: %w", err)
 	}
 
-	obj.convertIndices()
-	err = obj.normalize()
-	if err != nil {
-		return Object{}, err
+	if err = obj.convertIndices(); err != nil {
+		return Object{}, fmt.Errorf("invalid indices: %w", err)
 	}
+
+	if err = obj.normalize(); err != nil {
+		return Object{}, fmt.Errorf("normalize: %w", err)
+	}
+
 	obj.IndicesCount = int32(len(obj.Indices))
 
 	return obj, nil
@@ -159,7 +172,7 @@ func (o *Object) loadFace(raw []string) error {
 // normalize center and scale the object.
 // It also apply a planar projection to compute texture coordinates.
 func (o *Object) normalize() error {
-	const targetScale = float32(1)
+	const targetScale = float32(2)
 
 	center := vector.Add(o.min, o.max)
 	center.Mul(0.5)
@@ -190,9 +203,14 @@ func (o *Object) normalize() error {
 		n.Normalize().Abs()
 
 		for _, vec := range []vector.Vector{v0, v1, v2} {
-			vec.Sub(center).Mul(scaleFactor)
-			u, v := ProjTexture(vec, o.min, size, n)
+			vec.Sub(center)
 
+			// texture planar projection
+			textVec := vec.Clone()
+			textVec.Mul(1 / scaleFactor)
+			u, v := ProjTexture(textVec, o.min, size, n)
+
+			vec.Mul(scaleFactor)
 			vertices = append(vertices, []float32{vec.X(), vec.Y(), vec.Z(), u, v}...)
 			indices = append(indices, currentIdx)
 			currentIdx++
@@ -225,7 +243,7 @@ func ProjTexture(vertice, min, size, normal vector.Vector) (float32, float32) {
 }
 
 // convert indices from 1..21, -1, -4,.. to >=0 indices
-func (o *Object) convertIndices() {
+func (o *Object) convertIndices() error {
 	nv := int32(len(o.Vertices))
 
 	for _, v := range o.tmpIndices {
@@ -236,11 +254,10 @@ func (o *Object) convertIndices() {
 		}
 		o.Indices = append(o.Indices, uint32(v))
 	}
-}
 
-// func UV(x, min, size float32) float32 {
-// 	if size < 0 {
-// 		return 0
-// 	}
-// 	return (x - min) / size
-// }
+	maxIdx := slices.Max(o.Indices)
+	if maxIdx >= uint32(len(o.Vertices)) {
+		return ErrMissingVertices
+	}
+	return nil
+}

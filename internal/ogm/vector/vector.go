@@ -8,6 +8,14 @@ import (
 
 type Vector [3]float32
 
+func (v *Vector) Clone () Vector {
+	return Vector{
+		v[0],
+		v[1],
+		v[2],
+	}
+}
+
 func (v *Vector) X() float32 { return v[0] }
 func (v *Vector) Y() float32 { return v[1] }
 func (v *Vector) Z() float32 { return v[2] }
