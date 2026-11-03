@@ -106,7 +106,7 @@ func main() {
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 
 	// load image
-	r, err := texture.NewImg("./resources/wall.jpg")
+	r, err := texture.NewImg("./resources/cats.jpg")
 	if err != nil {
 		fmt.Printf("stop: texture: %s\n", err.Error())
 		return
