@@ -37,7 +37,6 @@ func initGlfw() error {
 	log.Println("glfw version", glfw.GetVersionString())
 
 	// glfw hints
-	// glfw.WindowHint(glfw.Samples, 4)             // antialiasing
 	glfw.WindowHint(glfw.Resizable, glfw.False)  // resizable
 	glfw.WindowHint(glfw.ContextVersionMajor, 4) // old: 4
 	glfw.WindowHint(glfw.ContextVersionMinor, 1) // old: 1
@@ -115,9 +114,6 @@ func ScrollHandler(w *glfw.Window, xoffset, yoffset float64) {
 }
 
 func KeyHandler(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-	// if action != glfw.Press {
-	// 	return
-	// }
 
 	switch key {
 	case glfw.KeyEscape:

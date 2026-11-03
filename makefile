@@ -1,6 +1,6 @@
 build_dir	= build
 
-target			= $(build_dir)/scop
+target			= scop
 junit_report	= $(build_dir)/report.xml
 cover_report	= $(build_dir)/coverage.out
 

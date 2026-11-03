@@ -20,9 +20,10 @@ import (
 )
 
 const (
-	fps       = 31
-	radius    = float32(10)
-	baseSpeed = 2.5
+	fps           = 31
+	radius        = float32(10)
+	baseSpeed     = 2.5
+	mixRatioSpeed = 0.05
 )
 
 var (
@@ -115,13 +116,15 @@ func main() {
 	// texture
 	textureMode := uint32(1)
 	lastTextureToggleTime := time.Now()
+	mixRatio := texture.NewMixRatio(1)
+	mixRatio.SetState(texture.Up)
+
 	tid := texture.NewTexture(r)
 
 	// set texture univar
 	err = errors.Join(
 		shader.SetUniVarUInt(shaders.UniVarTexture1, 0),
-		shader.SetUniVarUInt(shaders.UniVarMode, textureMode),
-		shader.SetUniVarFloat(shaders.UniVarColorRatio, 1),
+		shader.SetUniVarFloat(shaders.UniVarColorRatio, mixRatio.Ratio()),
 	)
 	if err != nil {
 		fmt.Printf("error: univar textures : %s\n", err.Error())
@@ -141,6 +144,7 @@ func main() {
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+		mixRatio.Update()
 		shader.Use()
 
 		// compute projection
@@ -160,7 +164,7 @@ func main() {
 		_ = shader.SetUniVarMatrice(shaders.UniVarModel, m0)
 		_ = shader.SetUniVarMatrice(shaders.UniVarView, cam.View())
 		_ = shader.SetUniVarMatrice(shaders.UniVarProjection, projMat)
-		_ = shader.SetUniVarUInt(shaders.UniVarMode, textureMode)
+		_ = shader.SetUniVarFloat(shaders.UniVarColorRatio, mixRatio.Ratio())
 
 		// draw
 		if textureMode != 0 {
@@ -204,8 +208,8 @@ func main() {
 
 			textureMode = (textureMode + 1) % 2
 			log.Printf("set texture mode to %s (%d)\n", textureModeName[textureMode], textureMode)
-			_ = shader.SetUniVarUInt(shaders.UniVarMode, textureMode)
 			lastTextureToggleTime = time.Now()
+			mixRatio.Toggle()
 		})
 
 		// cap fps
