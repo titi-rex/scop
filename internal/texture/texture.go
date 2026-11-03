@@ -1,7 +1,9 @@
 package texture
 
 import (
+
 	"image"
+
 
 	"github.com/go-gl/gl/v4.1-core/gl"
 )

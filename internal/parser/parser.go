@@ -31,15 +31,15 @@ const (
 var (
 	ErrUnknowToken     = errors.New("unknow ligne prefix")
 	ErrMissingVertices = errors.New("missing vertices")
+	ErrMissingIndices  = errors.New("missing indices")
 )
 
 // Object is the struct holding the vertices data
 type Object struct {
-	Name         string
-	Vertices     []float32
-	Indices      []uint32
-	IndicesCount int32
-	Matrice      matrice.Matrice
+	Name     string
+	Vertices []float32
+	Indices  []uint32
+	Matrice  matrice.Matrice
 
 	tmpIndices []int32
 	max        vector.Vector
@@ -80,7 +80,6 @@ func NewObj(path string) (Object, error) {
 				return Object{}, err
 			}
 		case smoothing, matLib, matUse:
-			log.Println("ignored line id", words[0])
 		default:
 			return Object{}, fmt.Errorf("%s: %w", words[0], ErrUnknowToken)
 		}
@@ -90,15 +89,23 @@ func NewObj(path string) (Object, error) {
 		return Object{}, fmt.Errorf("scanner: %w", err)
 	}
 
-	if err = obj.convertIndices(); err != nil {
-		return Object{}, fmt.Errorf("invalid indices: %w", err)
+	obj.convertIndices()
+
+	if obj.CountIndices() == 0 {
+		return Object{}, fmt.Errorf("len check: %w", ErrMissingIndices)
+	}
+
+	if obj.CountVertices() == 0 {
+		return Object{}, fmt.Errorf("len check: %w", ErrMissingVertices)
+	}
+
+	if slices.Max(obj.Indices) >= uint32(obj.CountVertices()) {
+		return Object{}, ErrMissingVertices
 	}
 
 	if err = obj.normalize(); err != nil {
 		return Object{}, fmt.Errorf("normalize: %w", err)
 	}
-
-	obj.IndicesCount = int32(len(obj.Indices))
 
 	return obj, nil
 }
@@ -109,12 +116,10 @@ func NewObj(path string) (Object, error) {
 //
 //	v 1.21513 2.213553 0.5654654
 func (o *Object) loadVertice(raw []string) error {
-
 	x, errX := strconv.ParseFloat(raw[0], 32)
 	y, errY := strconv.ParseFloat(raw[1], 32)
 	z, errZ := strconv.ParseFloat(raw[2], 32)
-	err := errors.Join(errX, errY, errZ)
-	if err != nil {
+	if err := errors.Join(errX, errY, errZ); err != nil {
 		return err
 	}
 
@@ -167,6 +172,21 @@ func (o *Object) loadFace(raw []string) error {
 	}
 
 	return nil
+}
+
+// convertIndices convert indices from 1..21, -1, -4,.. to >=0 indices.
+func (o *Object) convertIndices() {
+	nv := int32(len(o.Vertices))
+
+	for _, v := range o.tmpIndices {
+		if v > 0 {
+			v -= 1
+		} else if v < 0 {
+			v = nv + v
+		}
+		o.Indices = append(o.Indices, uint32(v))
+	}
+
 }
 
 // normalize center and scale the object.
@@ -242,22 +262,10 @@ func ProjTexture(vertice, min, size, normal vector.Vector) (float32, float32) {
 	}
 }
 
-// convert indices from 1..21, -1, -4,.. to >=0 indices
-func (o *Object) convertIndices() error {
-	nv := int32(len(o.Vertices))
+func (o *Object) CountVertices() int32 {
+	return int32(len(o.Vertices) / 3)
+}
 
-	for _, v := range o.tmpIndices {
-		if v > 0 {
-			v -= 1
-		} else if v < 0 {
-			v = nv + v
-		}
-		o.Indices = append(o.Indices, uint32(v))
-	}
-
-	maxIdx := slices.Max(o.Indices)
-	if maxIdx >= uint32(len(o.Vertices)) {
-		return ErrMissingVertices
-	}
-	return nil
+func (o *Object) CountIndices() int32 {
+	return int32(len(o.Indices))
 }

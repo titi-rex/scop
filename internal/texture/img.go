@@ -25,6 +25,8 @@ func NewImg(file string) (*image.RGBA, error) {
 	if rgba.Stride != rgba.Rect.Size().X*4 {
 		panic("unsupported stride")
 	}
+
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+
 	return rgba, nil
 }

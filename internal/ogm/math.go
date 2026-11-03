@@ -46,6 +46,16 @@ func Abs(f float32) float32 {
 	return float32(math.Abs(float64(f)))
 }
 
+func Clamp(value, min, max float32) float32 {
+	if value < min {
+		return min
+	} else if value > max {
+		return max
+	}
+
+	return value
+}
+
 func Clamp0(value float32) float32 {
 	if value <= 0 {
 		return 0
