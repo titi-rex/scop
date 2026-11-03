@@ -35,6 +35,7 @@ vendor:
 
 clean:
 	@echo $P cleanup
+	@rm $(target)
 	@rm -rf $(build_dir)
 
 re: clean build
