@@ -22,10 +22,13 @@ const (
 	comment   token = "#"
 	objName   token = "o"
 	vertice   token = "v"
+	texture   token = "vt"
 	face      token = "f"
 	matLib    token = "mtllib"
 	matUse    token = "usemtl"
 	smoothing token = "s"
+	group     token = "g"
+	emptyLine token = ""
 )
 
 var (
@@ -79,7 +82,8 @@ func NewObj(path string) (Object, error) {
 			if err := obj.loadFace(words[1:]); err != nil {
 				return Object{}, err
 			}
-		case smoothing, matLib, matUse:
+		case smoothing, matLib, matUse, emptyLine, group, texture:
+			continue
 		default:
 			return Object{}, fmt.Errorf("%s: %w", words[0], ErrUnknowToken)
 		}
@@ -149,22 +153,26 @@ func (o *Object) loadVertice(raw []string) error {
 // example:
 //
 //	f 1 5 3 14
-func (o *Object) loadFace(raw []string) error {
+func (o *Object) loadFace(line []string) error {
 	var values []int32
-	for _, s := range raw {
-		v, err := strconv.ParseInt(s, 10, 32)
+	for _, s := range line {
+		raw := strings.Split(s, "/")
+
+		value, err := strconv.ParseInt(raw[0], 10, 32)
 		if err != nil {
 			return err
+
 		}
-		if v == 0 {
+		if value == 0 {
 			return errors.New("indice == 0")
 		}
-		values = append(values, int32(v))
+
+		values = append(values, int32(value))
 	}
 
 	// triangle fan
 	var n int32
-	for i := 1; i+1 < len(raw); i += 1 {
+	for i := 1; i+1 < len(line); i += 1 {
 		o.tmpIndices = append(o.tmpIndices, int32(values[0]))
 		o.tmpIndices = append(o.tmpIndices, int32(values[i]))
 		o.tmpIndices = append(o.tmpIndices, int32(values[i+1]))
