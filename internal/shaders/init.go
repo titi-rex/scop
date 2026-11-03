@@ -11,7 +11,8 @@ const (
 	UniVarView       = "u_view"
 	UniVarProjection = "u_projection"
 
-	UniVarMode = "u_mode"
+	UniVarMode     = "u_mode"
+	UniVarColorRatio   = "u_col_ratio"
 	UniVarTexture1 = "u_texture1"
 )
 
@@ -29,8 +30,7 @@ func InitShader() (Shader, error) {
 	}
 
 	// link shader
-	err = shader.Link()
-	if err != nil {
+	if err := shader.Link(); err != nil {
 		return Shader{}, err
 	}
 
@@ -40,6 +40,7 @@ func InitShader() (Shader, error) {
 		UniVarView,
 		UniVarProjection,
 		UniVarMode,
+		UniVarColorRatio,
 		UniVarTexture1,
 	)
 	if err != nil {

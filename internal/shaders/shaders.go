@@ -178,3 +178,14 @@ func (s *Shader) SetUniVarInt(name string, v int32) error {
 
 	return nil
 }
+
+func (s *Shader) SetUniVarFloat(name string, v float32) error {
+	loc, ok := s.uniLoc[name]
+	if !ok {
+		return ErrLocNotRegister
+	}
+
+	gl.Uniform1f(loc, v)
+
+	return nil
+}

@@ -31,7 +31,7 @@ var (
 	deltaTime       = float32(0)
 	textureModeName = map[uint32]string{
 		0: "grayscale",
-		1: "wall",
+		1: "cats",
 	}
 )
 
@@ -108,27 +108,25 @@ func main() {
 	// load image
 	r, err := texture.NewImg("./resources/cats.jpg")
 	if err != nil {
-		fmt.Printf("stop: texture: %s\n", err.Error())
+		fmt.Printf("error: texture: %s\n", err.Error())
 		return
 	}
 
 	// texture
 	textureMode := uint32(1)
-	textureGraceTime := time.Now()
+	lastTextureToggleTime := time.Now()
 	tid := texture.NewTexture(r)
 
 	// set texture univar
 	err = errors.Join(
 		shader.SetUniVarUInt(shaders.UniVarTexture1, 0),
 		shader.SetUniVarUInt(shaders.UniVarMode, textureMode),
+		shader.SetUniVarFloat(shaders.UniVarColorRatio, 1),
 	)
 	if err != nil {
-		fmt.Printf("stop: univar textures : %s\n", err.Error())
+		fmt.Printf("error: univar textures : %s\n", err.Error())
 		return
 	}
-
-	// time
-	var lastFrame float64
 
 	// model
 	const rotationSpeed = 1.25
@@ -139,14 +137,10 @@ func main() {
 
 	for !window.ShouldClose() && !loopStatus {
 		t := time.Now() // used for fps cap
-		currentFrame := glfw.GetTime()
-		deltaTime = float32(currentFrame - lastFrame)
-		lastFrame = currentFrame
 
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		// use program shader
 		shader.Use()
 
 		// compute projection
@@ -156,14 +150,13 @@ func main() {
 		angle.Add(autoRotate)
 
 		// compute model matrice
-
 		m0 := matrice.NewIdent().
 			Translate(pos).
 			RotateZ(ogm.Rad(angle.Z())).
 			RotateY(ogm.Rad(angle.Y())).
 			RotateX(ogm.Rad(angle.X()))
 
-			// set matrice
+		// set univar
 		_ = shader.SetUniVarMatrice(shaders.UniVarModel, m0)
 		_ = shader.SetUniVarMatrice(shaders.UniVarView, cam.View())
 		_ = shader.SetUniVarMatrice(shaders.UniVarProjection, projMat)
@@ -175,7 +168,7 @@ func main() {
 			gl.BindTexture(gl.TEXTURE_2D, tid)
 		}
 		gl.BindVertexArray(vao)
-		gl.DrawElements(gl.TRIANGLES, obj.IndicesCount, gl.UNSIGNED_INT, nil)
+		gl.DrawElements(gl.TRIANGLES, obj.CountIndices(), gl.UNSIGNED_INT, nil)
 		UnbindVAO()
 		window.SwapBuffers()
 
@@ -205,17 +198,14 @@ func main() {
 		doKeyPress(glfw.KeyS, func() { pos[2] += moveSpeed })
 		doKeyPress(glfw.KeyW, func() { pos[2] -= moveSpeed })
 		doKeyPress(glfw.KeyT, func() {
-			if time.Since(textureGraceTime) < 500*time.Millisecond {
+			if time.Since(lastTextureToggleTime) < 500*time.Millisecond {
 				return
 			}
 
 			textureMode = (textureMode + 1) % 2
 			log.Printf("set texture mode to %s (%d)\n", textureModeName[textureMode], textureMode)
-			err = shader.SetUniVarUInt(shaders.UniVarMode, textureMode)
-			if err != nil {
-				log.Println("aie aie aei...", err)
-			}
-			textureGraceTime = time.Now()
+			_ = shader.SetUniVarUInt(shaders.UniVarMode, textureMode)
+			lastTextureToggleTime = time.Now()
 		})
 
 		// cap fps

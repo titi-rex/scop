@@ -4,6 +4,7 @@ in vec2 v_text_crd;
 
 uniform uint u_mode;
 uniform sampler2D u_texture1;
+uniform float u_col_ratio;
 
 out vec4 color;
 
@@ -15,6 +16,8 @@ void main() {
     color = base_color;
   } else if (u_mode == 1) {
     vec2 inv_text_crd = vec2(v_text_crd.x, 1.0 - v_text_crd.y);
-    color = mix(base_color, texture(u_texture1, inv_text_crd), 1);
+    vec4 text_color = texture(u_texture1, inv_text_crd);
+
+    color = mix(base_color, text_color, u_col_ratio);
   }
 }
